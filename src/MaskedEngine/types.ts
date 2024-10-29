@@ -16,11 +16,20 @@ export type PostprocessorCharacterDef = {
     action: (newCharacter: string) => string;
 };
 
-export type MaskCharacterInfo = {
+export type MaskedCharacterInfo = {
+    /** Выглядит как : тут или промпт, или как литерал */
     visibleAs: string;
+    /** Требуется ли символ на этом месте */
+    required: boolean;
+    /** Введённый символ с клавиатуры*/
+    actual: string | undefined;
+    /** Можно ли заменить этот символ (касается промптов) */
     replaceable: boolean;
+    /** Правило подстановки */
     rule?: RegExp;
+    /** Текст ошибки для вывода */
     error?: string;
+    /** Активное действие для этого символа */
     action: (character: string) => string;
 };
 
@@ -58,4 +67,9 @@ export type MaskedInputSettings = {
      * Если после этого следуют другие символы, они просто двигаются вправо, если там есть подходящие места
      */
     resetOnPrompt: boolean;
+    /**
+     * Если true, не принимает все вводимые данные, если какой-то из символов не подходит под маску.
+     * Если false, то отбрасывает неподходящие символы и вставляет в маску следующий подходящий
+     */
+    rejectInputOnFirstFailure: boolean;
 };

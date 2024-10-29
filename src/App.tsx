@@ -43,7 +43,7 @@ function App() {
         [stg]
     );
 
-    const [visibleMask, value] = useMaskedText(mask, stg, textRef);
+    const [visibleMask, value, processed] = useMaskedText(mask, stg, textRef);
 
     return (
         <div
@@ -56,6 +56,7 @@ function App() {
             <input value={mask} onChange={(e) => setMask(e.target.value)} />
             <input ref={textRef} id="test" value={value} />
             {visibleMask}
+            {processed}
 
             <SettingsView onChange={onStgChange} settings={stg} />
         </div>
