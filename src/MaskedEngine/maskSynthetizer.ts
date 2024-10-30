@@ -134,7 +134,11 @@ class MaskCharSynthetizer {
      */
     private getPurePositions(from?: number, to?: number): number[] {
         const free: number[] = [];
-        for (let index = from ?? 0; index < (to ?? this.mask.length); index += 1) {
+        for (
+            let index = from ?? 0;
+            index < (to ?? this.mask.length);
+            index += 1
+        ) {
             if (from && index < from) return free;
             if (this.mask[index].replaceable) {
                 free.push(index);
@@ -162,12 +166,11 @@ class MaskCharSynthetizer {
     private validateForPositions(
         validated: number[],
         positions: number[],
-        shift : number
+        shift: number = 0
     ): boolean {
         for (let i = 0; i < validated.length; i += 1) {
-            if (i + shift >= positions.length)
-                return false;
-            
+            if (i + shift >= positions.length) return false;
+
             const position = this.mask[positions[i + shift]];
             const char = this.mask[validated[i]];
 
@@ -338,16 +341,34 @@ class MaskCharSynthetizer {
         return puttable;
     }
 
-    /** Восстанавливает утраченную часть маски после удаления */
-    public regenerate() {}
-
-    private putInternal(dataChars: string[], position: number) {
+    private putInternal(
+        dataChars: (string | undefined)[],
+        positionIdx: number
+    ) {
         const chars = dataChars.slice();
-        const startPtr = this.getPtr(position);
+        const startPtr = this.getPtr(positionIdx);
         for (let i = startPtr; chars.length > 0; i += 1) {
             const mask = this.getMaskByPtr(i);
-            mask.actual = chars.shift();
+            const char = chars.shift();
+            mask.actual = char;
         }
+    }
+
+    /** Обрабатывает пробелы и промпты перед вставкой: если ресет разрешён, заменяет на undefined. Мутирует массив */
+    private prePutProcess(
+        puttable: (string | undefined)[]
+    ): (string | undefined)[] {
+        for (let index = 0; index < puttable.length; index += 1) {
+            if (
+                (puttable[index] === " " && this.settings.resetOnSpace) ||
+                (puttable[index] === this.settings.promptSymbol &&
+                    this.settings.resetOnPrompt)
+            ) {
+                puttable[index] = undefined;
+            }
+        }
+
+        return puttable;
     }
 
     /** Вставляет N символов в zero-based позицию */
@@ -366,7 +387,137 @@ class MaskCharSynthetizer {
             }
         }
 
+        this.prePutProcess(puttable);
         this.putInternal(puttable, position);
+    }
+
+    private validForPosition(char: string, positionIdx: number) {
+        const mask = this.mask[positionIdx];
+        if (!mask.replaceable && char === mask.visibleAs) return true;
+
+        if (
+            (this.settings.resetOnPrompt &&
+                char === this.settings.promptSymbol) ||
+            (this.settings.resetOnSpace && char === " ")
+        )
+            return true;
+
+        if (mask.rule && mask.rule.test(char)) return true;
+
+        return false;
+    }
+
+    /** Обнаруживает индекс в переданном значении, где начинается расхождение с маской */
+    private findDifference(value: string): number {
+        const chars = value.split("");
+        for (let index = 0; index < chars.length; index += 1) {
+            const mask = this.mask[index];
+            const char = chars[index];
+
+            if (!mask.replaceable && char === mask.visibleAs) continue;
+
+            if (char === mask.actual) continue;
+
+            if (char === mask.visibleAs) continue;
+
+            return index;
+        }
+
+        return value.length;
+    }
+
+    private validate(fragment: string, start: number = 0): boolean {
+        const startPtr = this.getPtr(start);
+        if (startPtr + fragment.length >= this.freePositions.length)
+            throw new Error(
+                "Fragment is bigger then FREE POS (must be impossible)"
+            );
+
+        const chars = fragment.split("");
+        for (let shift = 0; shift < fragment.length; shift += 1) {
+            if (
+                !this.validForPosition(
+                    chars[shift],
+                    this.freePositions[startPtr + shift]
+                )
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private extractActualChars(
+        startPtr?: number,
+        endPtr?: number
+    ): (string | undefined)[] {
+        const start = startPtr ?? 0;
+        const end = endPtr ?? this.freePositions.length;
+
+        const chars: (string | undefined)[] = [];
+
+        for (let ptr = start; ptr < end; ptr += 1) {
+            chars.push(this.getMaskByPtr(ptr).actual);
+        }
+
+        return chars;
+    }
+
+    /** Сбрасывает пользовательский ввод, начиная с позиции Start (по умолчанию 0) до позиции End (конец по умолчанию) */
+    private resetActualInput(startIdx?: number, endIdx?: number) {
+        const start = startIdx ?? 0;
+        const end = endIdx ?? this.mask.length;
+
+        for (let index = start; index < end; index += 1) {
+            this.mask[index].actual = undefined;
+        }
+    }
+
+    /** Восстанавливает утраченную часть маски после удаления.
+     * @param damaged это значение из самого input. Не скопированнное и не выведенное!
+     */
+    public regenerate(damaged: string) {
+        const lengthDiff = this.mask.length - damaged.length;
+
+        // регенерировать "нечего" (вероятна подмена символа!)
+        if (lengthDiff === 0) return;
+
+        if (lengthDiff < 0) throw new Error("Not supported (for now?)"); // ???
+
+        const diffStart = this.findDifference(damaged);
+        const restLength = damaged.length - diffStart;
+        const diffStartPtr = this.getPtr(diffStart);
+
+        // индекс несовпадения начинается раньше конца повреждённого фрагмента
+        if (restLength) {
+            // оригинальная позиция сдвинутого остатка
+            const restOriginPtr = this.getPtr(diffStart + lengthDiff);
+            const restOriginSize = this.freePositions.length - restOriginPtr;
+
+            const isValid = this.validateForPositions(
+                this.freePositions.slice(
+                    restOriginPtr,
+                    restOriginPtr + restOriginSize
+                ),
+                this.freePositions.slice(
+                    diffStartPtr,
+                    diffStartPtr + restLength
+                )
+            );
+
+            if (isValid) {
+                const actualRest = this.extractActualChars(
+                    restOriginPtr,
+                    restOriginPtr + restOriginSize
+                );
+
+                this.resetActualInput(diffStart);
+                this.putInternal(actualRest, diffStart);
+            }
+        } else {
+            this.resetActualInput(diffStart);
+        }
     }
 }
 
