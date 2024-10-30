@@ -1,53 +1,34 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { MaskedInputSettings } from "./types";
-import MaskProcessor from "./processor";
+import MaskProcessor from "./newProcessor";
 
 const useMaskedText = (
     mask: string,
     settings: MaskedInputSettings,
     ref: React.MutableRefObject<HTMLInputElement>,
-    initialValue: string = ""
-): [string, string, string] => {
-    const [value, setValue] = useState<string>(initialValue);
-    const processor = useMemo(
-        () => new MaskProcessor(mask, settings, ref),
-        [mask, ref, settings]
-    );
+    updateCallback: (newValue: string) => void,
+    initialValue?: string
+): [string] => {
+    const processor = useMemo(() => {
+        const proc = new MaskProcessor(mask, settings, ref, updateCallback);
+        if (initialValue) {
+            proc.applyValue(initialValue);
+        }
 
-    const [processed, setProcessed] = useState<string>(
-        processor.processValue(initialValue)
-    );
+        return proc;
+    }, [initialValue, mask, ref, settings, updateCallback]);
 
     useEffect(() => {
-        if (processor) setProcessed(processor.processValue(value));
-    }, [processor, value]);
-
-    const validator = useCallback((): void => {
-        try {
-            processor.checkValidity();
-            setValue(ref.current.value);
-        } finally {
-            /* empty */
+        if (ref.current) {
+            console.log("attached");
+            processor.attachListeners();
         }
     }, [processor, ref]);
 
-    useEffect(() => {
-        const cachedRef = ref.current;
-        cachedRef.addEventListener("input", validator);
+    useEffect(() => console.log("proc updated"), [processor]);
+    useEffect(() => console.log("ref updated"), [ref]);
 
-        return () => {
-            cachedRef.removeEventListener("input", validator);
-        };
-    }, [processor, ref, validator]);
-
-    console.log(processor);
-
-    const visibleMask = useMemo(
-        () => processor.visibleMask,
-        [processor.visibleMask]
-    );
-
-    return [visibleMask, value, processed];
+    return [processor.value];
 };
 
 export default useMaskedText;

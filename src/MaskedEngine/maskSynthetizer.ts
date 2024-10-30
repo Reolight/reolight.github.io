@@ -17,6 +17,16 @@ class MaskCharSynthetizer {
     private settings: MaskedInputSettings;
     /** Это позиции, не занятые литералами (содержит ИНДЕКСЫ) */
     private freePositions: number[] = [];
+    private focused: boolean = false;
+
+    public set hidden(value: boolean) {
+        this.focused = !value;
+        this.updateMaskOnFocusChange();
+    }
+
+    public get hidden(): boolean {
+        return !this.focused;
+    }
 
     constructor(settings: MaskedInputSettings) {
         this.settings = settings;
@@ -36,14 +46,14 @@ class MaskCharSynthetizer {
         };
     }
 
-    private placeholder(char: string, hidden: boolean): MaskedCharacterInfo {
+    private placeholder(char: string): MaskedCharacterInfo {
         return {
             action: this.action,
             actual: undefined,
             required: maskCharactersDefinitions.placeholders[char].required,
             replaceable: true,
             visibleAs:
-                this.settings.hidePromptOnLeave && hidden
+                this.settings.hidePromptOnLeave && this.hidden
                     ? " "
                     : this.settings.promptSymbol,
             rule: maskCharactersDefinitions.placeholders[char].rule,
@@ -55,15 +65,12 @@ class MaskCharSynthetizer {
         this.applyAction(maskCharactersDefinitions.postprocessors[char].action);
     }
 
-    public generate(
-        mask: string,
-        hidden: boolean = false
-    ): MaskedCharacterInfo[] {
+    public generate(mask: string): MaskedCharacterInfo[] {
         const generated: MaskedCharacterInfo[] = [];
 
         for (const char of mask) {
             if (char in maskCharactersDefinitions.placeholders) {
-                generated.push(this.placeholder(char, hidden));
+                generated.push(this.placeholder(char));
                 continue;
             }
 
@@ -81,18 +88,34 @@ class MaskCharSynthetizer {
     }
 
     /** Обновляет маску при потере/получении фокуса */
-    public updateMaskOnFocusChange(hidden: boolean): MaskedCharacterInfo[] {
+    public updateMaskOnFocusChange(): MaskedCharacterInfo[] {
         if (!this.settings.hidePromptOnLeave) return this.mask;
 
         for (const maskedChar of this.mask) {
             if (maskedChar.replaceable) {
-                maskedChar.visibleAs = hidden
+                maskedChar.visibleAs = this.hidden
                     ? " "
                     : this.settings.promptSymbol;
             }
         }
 
         return this.mask;
+    }
+
+    public get value(): string {
+        return this.mask.reduce((acc, charInfo) => {
+            if (charInfo.actual) return acc + charInfo.actual;
+
+            if (charInfo.replaceable)
+                return (
+                    acc +
+                    (this.hidden && this.settings.hidePromptOnLeave
+                        ? " "
+                        : charInfo.visibleAs)
+                );
+
+            return acc + charInfo.visibleAs;
+        }, "");
     }
 
     public toString(
@@ -391,22 +414,6 @@ class MaskCharSynthetizer {
         this.putInternal(puttable, position);
     }
 
-    private validForPosition(char: string, positionIdx: number) {
-        const mask = this.mask[positionIdx];
-        if (!mask.replaceable && char === mask.visibleAs) return true;
-
-        if (
-            (this.settings.resetOnPrompt &&
-                char === this.settings.promptSymbol) ||
-            (this.settings.resetOnSpace && char === " ")
-        )
-            return true;
-
-        if (mask.rule && mask.rule.test(char)) return true;
-
-        return false;
-    }
-
     /** Обнаруживает индекс в переданном значении, где начинается расхождение с маской */
     private findDifference(value: string): number {
         const chars = value.split("");
@@ -424,28 +431,6 @@ class MaskCharSynthetizer {
         }
 
         return value.length;
-    }
-
-    private validate(fragment: string, start: number = 0): boolean {
-        const startPtr = this.getPtr(start);
-        if (startPtr + fragment.length >= this.freePositions.length)
-            throw new Error(
-                "Fragment is bigger then FREE POS (must be impossible)"
-            );
-
-        const chars = fragment.split("");
-        for (let shift = 0; shift < fragment.length; shift += 1) {
-            if (
-                !this.validForPosition(
-                    chars[shift],
-                    this.freePositions[startPtr + shift]
-                )
-            ) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private extractActualChars(

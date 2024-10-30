@@ -21,6 +21,7 @@ function App() {
                 resetOnSpace: false,
                 skipLiterals: false,
                 textMaskFormat: MaskFormat.ExcludePromptAndLiterals,
+                rejectInputOnFirstFailure: false,
             };
 
         return JSON.parse(saved);
@@ -43,7 +44,10 @@ function App() {
         [stg]
     );
 
-    const [visibleMask, value, processed] = useMaskedText(mask, stg, textRef);
+    const [value, setValue] = useState<string>("");
+
+    const update = useCallback((newValue: string) => setValue(newValue), []);
+    useMaskedText(mask, stg, textRef, update);
 
     return (
         <div
@@ -54,9 +58,7 @@ function App() {
             }}
         >
             <input value={mask} onChange={(e) => setMask(e.target.value)} />
-            <input ref={textRef} id="test" value={value} />
-            {visibleMask}
-            {processed}
+            <input ref={textRef} id="test" defaultValue={value} />
 
             <SettingsView onChange={onStgChange} settings={stg} />
         </div>
