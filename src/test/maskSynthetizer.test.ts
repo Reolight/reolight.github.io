@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import MaskCharSynthetizer from "../MaskedEngine/maskSynthetizer";
 import { MaskFormat } from "../MaskedEngine/types";
+import { maskEndLetter, maskWithLetterInside } from "./common";
 
 const maskSynthetizer = new MaskCharSynthetizer({
     beepOnError: false,
@@ -79,4 +80,66 @@ test("Корректно кладутся и двигают движимое", (
     maskSynthetizer.putSymbols("111", 0);
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("1112");
+})
+
+test("Корректно вставляет символы с упором в другую маску: 999  >> 99L", () => {
+    maskSynthetizer.generate(maskWithLetterInside);
+    maskSynthetizer.putSymbols("123", 0);
+
+    const output = maskSynthetizer.toString((s) => s.textMaskFormat);
+    expect(output).toBe("12   ");
+})
+
+test("Корректно НЕ вставляет символы, если нет места", () => {
+    maskSynthetizer.generate(nonReqMask);
+    maskSynthetizer.putSymbols("1111", 0);
+    maskSynthetizer.putSymbols("5", 1)
+
+    const output = maskSynthetizer.toString((s) => s.textMaskFormat);
+    expect(output).toBe("1111");
+});
+
+test("Корректно вставляет символ, если осталось последнее место", () => {
+    maskSynthetizer.generate(nonReqMask);
+    maskSynthetizer.putSymbols("11", 1);
+    maskSynthetizer.putSymbols("5", 1)
+
+    const output = maskSynthetizer.toString((s) => s.textMaskFormat);
+    expect(output).toBe(" 511");
+});
+
+test("Корректно вставляется и перемещается через литерал", () => {
+    maskSynthetizer.generate(nonReqMaskWithLiterl);
+    maskSynthetizer.putSymbols("11", 0);
+    maskSynthetizer.putSymbols("2", 0);
+
+    const output = maskSynthetizer.toString((s) => s.textMaskFormat);
+    expect(output).toBe("21 1 ");
+})
+
+test("Корректно НЕ вставляется, упираясь в другую маску", () => {
+    maskSynthetizer.generate(maskWithLetterInside);
+    maskSynthetizer.putSymbols("11", 0);
+    maskSynthetizer.putSymbols("2", 0);
+
+    const output = maskSynthetizer.toString((s) => s.textMaskFormat);
+    expect(output).toBe("11   ");
+})
+
+test("Корректно вставляется обрезанное, упирается в конец строки", () => {
+    maskSynthetizer.generate(nonReqMask);
+    maskSynthetizer.putSymbols("111", 0);
+    maskSynthetizer.putSymbols("22", 0);
+
+    const output = maskSynthetizer.toString((s) => s.textMaskFormat);
+    expect(output).toBe("2111");
+})
+
+test("Корректно вставляется обрезанное, упирается в другую маску", () => {
+    maskSynthetizer.generate(maskEndLetter);
+    maskSynthetizer.putSymbols("11", 0);
+    maskSynthetizer.putSymbols("22", 0);
+
+    const output = maskSynthetizer.toString((s) => s.textMaskFormat);
+    expect(output).toBe("211 ");
 })

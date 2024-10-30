@@ -46,5 +46,5 @@ test("Определить длину сдвигаемого блока со з�
 
     const actual = maskSynthetizer["getShiftableBlockLength"](0);
 
-    expect(actual).toBe(3);
+    expect(actual).toBe(4);
 });

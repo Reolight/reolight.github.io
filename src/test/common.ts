@@ -15,3 +15,5 @@ export const maskSynthetizer = new MaskCharSynthetizer({
 
 export const nonReqMaskWithLiterl = "99.99";
 export const nonReqMask = "9999";
+export const maskWithLetterInside = "99L99";
+export const maskEndLetter = "999L";

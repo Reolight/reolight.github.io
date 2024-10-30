@@ -132,9 +132,9 @@ class MaskCharSynthetizer {
      * Возвращает список позиций, свободных от литералов.
      * Игнорирует занятые места другими символами
      */
-    private getPurePositions(from?: number): number[] {
+    private getPurePositions(from?: number, to?: number): number[] {
         const free: number[] = [];
-        for (let index = from ?? 0; index < this.mask.length; index += 1) {
+        for (let index = from ?? 0; index < (to ?? this.mask.length); index += 1) {
             if (from && index < from) return free;
             if (this.mask[index].replaceable) {
                 free.push(index);
@@ -145,7 +145,7 @@ class MaskCharSynthetizer {
     }
 
     /**
-     * Возвращает УКАЗАТЕЛЬ, наиболее близко соответствующий ИНДЕКСУ.
+     * Возвращает УКАЗАТЕЛЬ, наиболее близкий (в большую сторону) к ИНДЕКСУ.
      */
     private getPtr(startIdx: number) {
         return this.freePositions.findIndex((pos) => pos >= startIdx);
@@ -161,10 +161,14 @@ class MaskCharSynthetizer {
      */
     private validateForPositions(
         validated: number[],
-        positions: number[]
+        positions: number[],
+        shift : number
     ): boolean {
-        for (let i = 0; i < validated.length - 1; i += 1) {
-            const position = this.mask[positions[i]];
+        for (let i = 0; i < validated.length; i += 1) {
+            if (i + shift >= positions.length)
+                return false;
+            
+            const position = this.mask[positions[i + shift]];
             const char = this.mask[validated[i]];
 
             if (!char.actual) {
@@ -188,10 +192,10 @@ class MaskCharSynthetizer {
      * @returns Возвращает длину перемещаемого блока. Если отрицательно - значит такого блока перед курсором нет.
      */
     private getShiftableBlockLength(index: number): number {
-        for (let i = this.mask.length - 1; i > 0; i -= 1) {
+        for (let i = this.mask.length - 1; i >= index; i -= 1) {
             const char = this.mask[i];
             if (!char.actual) continue;
-            else return (i + 1) - index;
+            else return i + 1 - index;
         }
 
         return -index;
@@ -208,7 +212,7 @@ class MaskCharSynthetizer {
         const start = movable[0];
         const free = this.getPurePositions(start);
         for (let i = by; i > 0; i -= 1) {
-            if (this.validateForPositions(movable, free)) return i;
+            if (this.validateForPositions(movable, free, i)) return i;
         }
 
         return 0;
@@ -221,14 +225,13 @@ class MaskCharSynthetizer {
      */
     private shift(actualMovable: number[], by: number) {
         const startMoveFromIdx = actualMovable[0]; // index - указывает на символ this.mask
-        const startMoveToPtr =
-            this.freePositions.findIndex((pos) => pos === startMoveFromIdx) +
-            by; // pointer указывает на массив с индексами
+        const startMoveToPtr = this.getPtr(startMoveFromIdx) + by; // pointer указывает на массив с индексами
 
-        for (let i = actualMovable.length - 1; i > 0; i -= 1) {
+        for (let i = actualMovable.length - 1; i >= 0; i -= 1) {
             const from = this.mask[actualMovable[i]];
-            const to = this.mask[this.freePositions[startMoveToPtr]];
+            const to = this.getMaskByPtr(startMoveToPtr + i);
             to.actual = from.actual;
+            from.actual = undefined;
         }
     }
 
@@ -240,7 +243,7 @@ class MaskCharSynthetizer {
      */
     private getMovable(start: number, length: number): number[] {
         const startPtr = this.getPtr(start);
-        const endPtr = this.getPtr(start + length) - 1;
+        const endPtr = this.getPtr(start + length);
 
         if (startPtr < 0 || endPtr < 0)
             throw new Error("Null Pointers detected");
@@ -258,7 +261,11 @@ class MaskCharSynthetizer {
      */
     public shiftOccupiedRight(start: number, by: number): number {
         const blockLength = this.getShiftableBlockLength(start);
+
         if (blockLength < 0) throw new Error("Block length is negative");
+
+        if (blockLength + start >= this.mask.length) return 0;
+
         const movable = this.getMovable(start, blockLength);
         const possibleBy = this.getPossibleShiftBy(movable, by);
         if (possibleBy) this.shift(movable, possibleBy);
@@ -274,10 +281,13 @@ class MaskCharSynthetizer {
         const startPtr = this.getPtr(start);
 
         let available = 0;
-        for (let i = startPtr; i < this.freePositions.length; i += 1, available += 1) {
+        for (
+            let i = startPtr;
+            i < this.freePositions.length;
+            i += 1, available += 1
+        ) {
             const mask = this.getMaskByPtr(i);
-            if (!mask) 
-                throw new Error("not found");
+            if (!mask) throw new Error("not found");
             if (mask.actual) return available;
         }
 
@@ -299,13 +309,25 @@ class MaskCharSynthetizer {
         for (
             let maskPtr = startPtr;
             chars.length > 0 && maskPtr < this.freePositions.length;
+
         ) {
             const char = chars.shift()!;
-            const mask = this.getMaskByPtr(startPtr);
+            const mask = this.getMaskByPtr(maskPtr);
+
+            // если пробел или промпт разрешены для сброса, поступаем как с подходящим символом
+            if (
+                (char === " " && this.settings.resetOnSpace) ||
+                (char === this.settings.promptSymbol &&
+                    this.settings.resetOnPrompt)
+            ) {
+                puttable.push(char);
+                maskPtr += 1;
+            }
 
             if (mask.rule) {
                 if (mask.rule.test(char)) {
                     puttable.push(char);
+                    maskPtr += 1;
                 } else {
                     if (!this.settings.rejectInputOnFirstFailure) continue;
                     else throw new Error(createErrorMessage(mask, char));
@@ -331,9 +353,7 @@ class MaskCharSynthetizer {
     /** Вставляет N символов в zero-based позицию */
     public putSymbols(data: string, position: number) {
         let puttable = this.getPuttable(data, position);
-        let availablePlace = this.countAvailablePlaceFor(
-            position
-        );
+        let availablePlace = this.countAvailablePlaceFor(position);
 
         if (availablePlace < puttable.length) {
             availablePlace += this.shiftOccupiedRight(
