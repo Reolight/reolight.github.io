@@ -1,3 +1,4 @@
+import { currencyMap } from "./consts";
 import { MaskedCharacterInfo } from "./types";
 
 export function createErrorMessage(
@@ -9,4 +10,12 @@ export function createErrorMessage(
         : charMask.error.indexOf("{0}") >= 0
         ? charMask.error.replace("{0}", char)
         : charMask.error;
+}
+
+export function getCurrencyCode(locale: string) {
+    const key = Object.keys(currencyMap).find(
+        (k) => k === locale || k.startsWith(locale) || k.endsWith(locale)
+    ) as keyof typeof currencyMap | undefined;
+
+    return !key ? currencyMap["en-US"] : currencyMap[key];
 }

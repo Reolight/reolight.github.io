@@ -1,3 +1,17 @@
+export type MaskedCharacterDefscontainers = {
+    placeholders: {
+        [TCharacter in string]: PlaceholderCharacterDef;
+    };
+    postprocessors: {
+        [TCharacter in string]: PostprocessorCharacterDef;
+    };
+    localizedLiterals: {
+        [TCharacter in string]: LocalizedLiteralsDef;
+    };
+
+    isNotRegistered(character: string): boolean;
+};
+
 export type MaskedCharacter = {
     character: string;
 };

@@ -1,33 +1,11 @@
 import {
     ActionProcessor,
-    LocalizedLiteralsDef,
-    PlaceholderCharacterDef,
-    PostprocessorCharacterDef,
+    MaskedCharacterDefscontainers,
     TERMINATOR,
 } from "./types";
-
-type MaskedCharacterDefscontainers = {
-    placeholders: {
-        [TCharacter in string]: PlaceholderCharacterDef;
-    };
-    postprocessors: {
-        [TCharacter in string]: PostprocessorCharacterDef;
-    };
-    localizedLiterals: {
-        [TCharacter in string]: LocalizedLiteralsDef;
-    };
-
-    isNotRegistered(character: string): boolean;
-};
+import { getCurrencyCode } from "./utils";
 
 export const EmptyAction: ActionProcessor = (char) => char;
-
-function getCurrencyHelper(locale: string): string | undefined {
-    return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: "USD", // This is just a placeholder, it doesn't matter which currency you use here
-    }).resolvedOptions().currency;
-}
 
 const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
     placeholders: {
@@ -111,7 +89,7 @@ const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
             visibleAs() {
                 const char = Intl.NumberFormat(navigator.language, {
                     style: "currency",
-                    currency: getCurrencyHelper(navigator.language),
+                    currency: getCurrencyCode(navigator.language),
                 })
                     .formatToParts(0)
                     .find((part) => part.type === "currency");

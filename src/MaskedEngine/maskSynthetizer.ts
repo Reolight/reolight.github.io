@@ -505,7 +505,7 @@ class MaskCharSynthetizer {
      * @returns индекс начала повреждения или длину строки
      */
     public regenerate(damaged: string): number {
-        const lengthDiff = this.mask.length - damaged.length;
+        const lengthDiff = this.actualLength - damaged.length;
 
         // регенерировать "нечего" (вероятна подмена символа!)
         if (lengthDiff === 0) return damaged.length;
