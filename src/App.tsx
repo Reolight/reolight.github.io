@@ -44,9 +44,10 @@ function App() {
         [stg]
     );
 
-    const [value, setValue] = useState<string>("");
+    const update = useCallback((newValue: string) => {
+        if (textRef.current) textRef.current.value = newValue;
+    }, []);
 
-    const update = useCallback((newValue: string) => setValue(newValue), []);
     useMaskedText(mask, stg, textRef, update);
 
     return (
@@ -58,7 +59,7 @@ function App() {
             }}
         >
             <input value={mask} onChange={(e) => setMask(e.target.value)} />
-            <input ref={textRef} id="test" defaultValue={value} />
+            <input ref={textRef} id="test" />
 
             <SettingsView onChange={onStgChange} settings={stg} />
         </div>

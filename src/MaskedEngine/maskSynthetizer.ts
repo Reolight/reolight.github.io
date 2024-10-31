@@ -198,7 +198,6 @@ class MaskCharSynthetizer {
             const char = this.mask[validated[i]];
 
             if (!char.actual) {
-                if (position.required) return false;
                 continue;
             }
 
@@ -364,17 +363,22 @@ class MaskCharSynthetizer {
         return puttable;
     }
 
+    /** Вставляет символы с начала указанной позиции по указателям (т.е. в свободные строки).
+     * Возвращает индекс последнего элемента*/
     private putInternal(
         dataChars: (string | undefined)[],
         positionIdx: number
-    ) {
+    ): number {
         const chars = dataChars.slice();
         const startPtr = this.getPtr(positionIdx);
         for (let i = startPtr; chars.length > 0; i += 1) {
             const mask = this.getMaskByPtr(i);
             const char = chars.shift();
             mask.actual = char;
+            if (!chars.length) return this.freePositions[i];
         }
+
+        return this.freePositions[startPtr];
     }
 
     /** Обрабатывает пробелы и промпты перед вставкой: если ресет разрешён, заменяет на undefined. Мутирует массив */
@@ -394,8 +398,10 @@ class MaskCharSynthetizer {
         return puttable;
     }
 
-    /** Вставляет N символов в zero-based позицию */
-    public putSymbols(data: string, position: number) {
+    /** Вставляет N символов в zero-based позицию, возвращает индекс,
+     * соответствующий элементу после вставлненных.
+     * Если ничего не вставлено, возвращает тот же индекс */
+    public putSymbols(data: string, position: number): number {
         let puttable = this.getPuttable(data, position);
         let availablePlace = this.countAvailablePlaceFor(position);
 
@@ -411,7 +417,8 @@ class MaskCharSynthetizer {
         }
 
         this.prePutProcess(puttable);
-        this.putInternal(puttable, position);
+        const putted = this.putInternal(puttable, position);
+        return !puttable.length ? position : putted + 1;
     }
 
     /** Обнаруживает индекс в переданном значении, где начинается расхождение с маской */
@@ -425,7 +432,7 @@ class MaskCharSynthetizer {
 
             if (char === mask.actual) continue;
 
-            if (char === mask.visibleAs) continue;
+            if (!mask.actual && char === mask.visibleAs) continue;
 
             return index;
         }
@@ -461,12 +468,13 @@ class MaskCharSynthetizer {
 
     /** Восстанавливает утраченную часть маски после удаления.
      * @param damaged это значение из самого input. Не скопированнное и не выведенное!
+     * @returns индекс начала повреждения или длину строки
      */
-    public regenerate(damaged: string) {
+    public regenerate(damaged: string): number {
         const lengthDiff = this.mask.length - damaged.length;
 
         // регенерировать "нечего" (вероятна подмена символа!)
-        if (lengthDiff === 0) return;
+        if (lengthDiff === 0) return damaged.length;
 
         if (lengthDiff < 0) throw new Error("Not supported (for now?)"); // ???
 
@@ -503,6 +511,8 @@ class MaskCharSynthetizer {
         } else {
             this.resetActualInput(diffStart);
         }
+
+        return diffStart;
     }
 }
 

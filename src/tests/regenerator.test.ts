@@ -72,3 +72,21 @@ test("Регенерирует как гидра.. ЕМУ СНЕСЛО БОШК�
 
     expect(regenerated).toBe("19a.a__._._");
 })
+
+test("Правильно регенерирует маску со смесью обязательных и необязательных символов: удаление и смещение возможно", () => {
+    maskSynthetizer.generate("00.900");
+    maskSynthetizer.putSymbols("42.13", 0);
+    maskSynthetizer.regenerate("4.13_");
+    const regenerated = maskSynthetizer.toString(() => MaskFormat.IncludePromptAndLiterals);
+
+    expect(regenerated).toBe("41.3__")
+})
+
+test("регенерирует маску, когда удалён последний символ", () => {
+    maskSynthetizer.generate("00.99");
+    maskSynthetizer.putSymbols("8", 0);
+    maskSynthetizer.regenerate("_.__");
+    const regenerated = maskSynthetizer.toString(() => MaskFormat.IncludePromptAndLiterals);
+
+    expect(regenerated).toBe("__.__")
+})

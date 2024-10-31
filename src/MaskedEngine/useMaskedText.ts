@@ -8,8 +8,12 @@ const useMaskedText = (
     ref: React.MutableRefObject<HTMLInputElement>,
     updateCallback: (newValue: string) => void,
     initialValue?: string
-): [string] => {
+): void => {
     const processor = useMemo(() => {
+        if (!ref.current) {
+            return undefined;
+        }
+
         const proc = new MaskProcessor(mask, settings, ref, updateCallback);
         if (initialValue) {
             proc.applyValue(initialValue);
@@ -19,16 +23,21 @@ const useMaskedText = (
     }, [initialValue, mask, ref, settings, updateCallback]);
 
     useEffect(() => {
-        if (ref.current) {
-            console.log("attached");
+        if (processor) {
+            console.debug("attached");
             processor.attachListeners();
         }
-    }, [processor, ref]);
+
+        return () => {
+            if (processor) {
+                console.debug("deattached");
+                processor?.deattachListeners();
+            }
+        };
+    }, [processor]);
 
     useEffect(() => console.log("proc updated"), [processor]);
     useEffect(() => console.log("ref updated"), [ref]);
-
-    return [processor.value];
 };
 
 export default useMaskedText;

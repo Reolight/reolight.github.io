@@ -25,16 +25,29 @@ class MaskProcessor2 {
         this.settings = settings;
         this.synthetizer = new MaskCharSynthetizer(settings);
         this.synthetizer.generate(mask);
+
+        this.synthetizer.hidden =
+            settings.hidePromptOnLeave &&
+            ref.current !== document.activeElement;
+
         this.updateSrcValue = valueUpdate;
+
+        this.invokeUpdate();
     }
 
     public applyValue(value: string) {
-        this.synthetizer.putSymbols(value, 0);
+        const lastPuttedIdx = this.synthetizer.putSymbols(value, 0);
+        this.invokeUpdate(lastPuttedIdx);
     }
 
-    private invokeUpdate() {
+    private invokeUpdate(caretStart?: number, caretEnd?: number) {
         if (this.updateSrcValue) {
+            const value = this.synthetizer.value;
+            const start = caretStart ?? value.length;
+            const end = caretEnd ?? start;
             this.updateSrcValue(this.synthetizer.value);
+            this.ref.current.selectionStart = start;
+            this.ref.current.selectionEnd = end;
         }
     }
 
@@ -49,23 +62,24 @@ class MaskProcessor2 {
     }
 
     private get selectionStartIdx(): number {
-        return (this.ref.current.selectionStart ?? 1) - 1;
+        return (this.ref.current.selectionStart ?? 1);
     }
 
     private get selectionEndIdx(): number {
-        return (this.ref.current.selectionEnd ?? 1) - 1;
+        return (this.ref.current.selectionEnd ?? 1);
     }
 
     private set selectionStartIdx(value: number) {
-        this.ref.current.selectionStart = value + 1;
+        this.ref.current.selectionStart = value;
     }
 
     private set selectionEndIdx(value: number) {
-        this.ref.current.selectionEnd = value + 1;
+        this.ref.current.selectionEnd = value;
     }
 
     private onBeforeInput(e: Event) {
         const event = e as InputEvent;
+        console.debug("onBeforeInput launched")
         if (event.inputType.startsWith("insert")) {
             event.preventDefault();
             const data = event.data;
@@ -78,16 +92,23 @@ class MaskProcessor2 {
                 this.synthetizer.regenerate(newValue);
             }
 
-            if (data) this.synthetizer.putSymbols(data, startIdx);
-            this.invokeUpdate();
+            const lastPuttedIdx = data
+                ? this.synthetizer.putSymbols(data, startIdx)
+                : 0;
+
+            this.invokeUpdate(lastPuttedIdx);
+            console.debug("\tInput data:", event.data, "event type: ", event.inputType)
         }
     }
 
     private onInput() {
         const currentValue = this.ref.current.value;
-        if (currentValue.length !== this.synthetizer.value.length) {
-            this.synthetizer.regenerate(currentValue);
-            this.invokeUpdate();
+        const storedValue = this.synthetizer.value;
+        console.debug("onInput: ", currentValue, "stored: ", storedValue);
+        if (currentValue.length !== storedValue.length) {
+            const diffIdx = this.synthetizer.regenerate(currentValue);
+            console.debug("\tregenerated: ", this.synthetizer.value, "idx:", diffIdx)
+            this.invokeUpdate(diffIdx);
         }
     }
 
@@ -104,12 +125,11 @@ class MaskProcessor2 {
         return this.synthetizer.toString((settings) => settings.textMaskFormat);
     }
 
-
-    private hidePromptsBound = this.hidePrompts.bind(this)
-    private showPromptsBound = this.showPrompts.bind(this)
-    private onInputBound = this.onInput.bind(this)
-    private onBeforeInputBound = this.onBeforeInput.bind(this)
-    private onCopyBound = this.onCopy.bind(this)
+    private hidePromptsBound = this.hidePrompts.bind(this);
+    private showPromptsBound = this.showPrompts.bind(this);
+    private onInputBound = this.onInput.bind(this);
+    private onBeforeInputBound = this.onBeforeInput.bind(this);
+    private onCopyBound = this.onCopy.bind(this);
 
     public attachListeners() {
         if (this.settings.hidePromptOnLeave) {
@@ -118,18 +138,27 @@ class MaskProcessor2 {
         }
 
         this.ref.current.addEventListener("input", this.onInputBound);
-        this.ref.current.addEventListener("beforeinput", this.onBeforeInputBound);
+        this.ref.current.addEventListener(
+            "beforeinput",
+            this.onBeforeInputBound
+        );
         this.ref.current.addEventListener("copy", this.onCopyBound);
     }
 
     public deattachListeners() {
         if (this.settings.hidePromptOnLeave) {
             this.ref.current.removeEventListener("blur", this.hidePromptsBound);
-            this.ref.current.removeEventListener("focus", this.showPromptsBound);
+            this.ref.current.removeEventListener(
+                "focus",
+                this.showPromptsBound
+            );
         }
 
         this.ref.current.removeEventListener("input", this.onInputBound);
-        this.ref.current.removeEventListener("beforeinput", this.onBeforeInputBound);
+        this.ref.current.removeEventListener(
+            "beforeinput",
+            this.onBeforeInputBound
+        );
         this.ref.current.removeEventListener("copy", this.onCopyBound);
     }
 }
