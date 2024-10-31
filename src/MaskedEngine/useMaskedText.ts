@@ -15,6 +15,7 @@ const useMaskedText = (
         }
 
         const proc = new MaskProcessor(mask, settings, ref, updateCallback);
+
         if (initialValue) {
             proc.applyValue(initialValue);
         }

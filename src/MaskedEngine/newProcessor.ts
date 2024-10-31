@@ -92,11 +92,18 @@ class MaskProcessor2 {
                 this.synthetizer.regenerate(newValue);
             }
 
+            try {
             const lastPuttedIdx = data
                 ? this.synthetizer.putSymbols(data, startIdx)
                 : 0;
 
             this.invokeUpdate(lastPuttedIdx);
+            } catch (e) {
+                const error = e as Error
+                console.error(error.message);
+                
+            }
+
             console.debug("\tInput data:", event.data, "event type: ", event.inputType)
         }
     }
