@@ -1,4 +1,3 @@
-import { test, expect } from "vitest";
 import { maskSynthetizer, maskWithLetterInside } from "./common";
 
 test("Корректно обрезает неподходящие символы ('123' > '12')", () => {

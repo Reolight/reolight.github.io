@@ -41,13 +41,15 @@ class MaskProcessor2 {
     }
 
     private invokeUpdate(caretStart?: number, caretEnd?: number) {
+        const value = this.synthetizer.value;
+        const start = caretStart ?? value.length;
+        const end = caretEnd ?? start;
+        this.ref.current.value = value;
+        this.ref.current.selectionStart = start;
+        this.ref.current.selectionEnd = end;
+
         if (this.updateSrcValue) {
-            const value = this.synthetizer.value;
-            const start = caretStart ?? value.length;
-            const end = caretEnd ?? start;
-            this.updateSrcValue(this.synthetizer.value);
-            this.ref.current.selectionStart = start;
-            this.ref.current.selectionEnd = end;
+            this.updateSrcValue(value);
         }
     }
 
@@ -62,11 +64,11 @@ class MaskProcessor2 {
     }
 
     private get selectionStartIdx(): number {
-        return (this.ref.current.selectionStart ?? 1);
+        return this.ref.current.selectionStart ?? 1;
     }
 
     private get selectionEndIdx(): number {
-        return (this.ref.current.selectionEnd ?? 1);
+        return this.ref.current.selectionEnd ?? 1;
     }
 
     private set selectionStartIdx(value: number) {
@@ -79,7 +81,7 @@ class MaskProcessor2 {
 
     private onBeforeInput(e: Event) {
         const event = e as InputEvent;
-        console.debug("onBeforeInput launched")
+        console.debug("onBeforeInput launched");
         if (event.inputType.startsWith("insert")) {
             event.preventDefault();
             const data = event.data;
@@ -93,18 +95,22 @@ class MaskProcessor2 {
             }
 
             try {
-            const lastPuttedIdx = data
-                ? this.synthetizer.putSymbols(data, startIdx)
-                : 0;
+                const lastPuttedIdx = data
+                    ? this.synthetizer.putSymbols(data, startIdx)
+                    : 0;
 
-            this.invokeUpdate(lastPuttedIdx);
+                this.invokeUpdate(lastPuttedIdx);
             } catch (e) {
-                const error = e as Error
+                const error = e as Error;
                 console.error(error.message);
-                
             }
 
-            console.debug("\tInput data:", event.data, "event type: ", event.inputType)
+            console.debug(
+                "\tInput data:",
+                event.data,
+                "event type: ",
+                event.inputType
+            );
         }
     }
 
@@ -114,7 +120,12 @@ class MaskProcessor2 {
         console.debug("onInput: ", currentValue, "stored: ", storedValue);
         if (currentValue.length !== storedValue.length) {
             const diffIdx = this.synthetizer.regenerate(currentValue);
-            console.debug("\tregenerated: ", this.synthetizer.value, "idx:", diffIdx)
+            console.debug(
+                "\tregenerated: ",
+                this.synthetizer.value,
+                "idx:",
+                diffIdx
+            );
             this.invokeUpdate(diffIdx);
         }
     }

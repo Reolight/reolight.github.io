@@ -1,4 +1,3 @@
-import { expect, test } from "vitest";
 import { maskSynthetizer, nonReqMask, nonReqMaskWithLiterl as nonReqMaskWithLiteral } from "./common";
 
 test("Правильно определяет количество доступных мест", () => {

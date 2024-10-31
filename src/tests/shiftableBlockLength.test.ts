@@ -1,4 +1,3 @@
-import { expect, test } from "vitest";
 import { maskSynthetizer, nonReqMask, nonReqMaskWithLiterl } from "./common";
 
 test("Определить длину сдвигаемого блока со значением '1   ' с позиции 0", () => {

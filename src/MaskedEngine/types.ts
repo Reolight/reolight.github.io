@@ -4,6 +4,10 @@ export type MaskedCharacter = {
 
 export const TERMINATOR = "|";
 
+export type LocalizedLiteralsDef = {
+    visibleAs: () => string;
+}
+
 export type PlaceholderCharacterDef = {
     required: boolean;
     error: string;

@@ -19,7 +19,7 @@ const SettingsValueView = <TKey extends keyof MaskedInputSettings>({
     name,
     onChange,
     value,
-}: SettingsValueViewPropsType<TKey>) => {
+}: SettingsValueViewPropsType<TKey>) : JSX.Element => {
     switch (typeof value) {
         case "boolean":
             return (
@@ -91,6 +91,8 @@ const SettingsValueView = <TKey extends keyof MaskedInputSettings>({
                     </label>
                 </div>
             );
+        
+            default: return <></>
     }
 };
 

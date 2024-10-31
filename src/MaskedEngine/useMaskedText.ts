@@ -6,7 +6,7 @@ const useMaskedText = (
     mask: string,
     settings: MaskedInputSettings,
     ref: React.MutableRefObject<HTMLInputElement>,
-    updateCallback: (newValue: string) => void,
+    updateCallback?: (newValue: string) => void,
     initialValue?: string
 ): void => {
     const processor = useMemo(() => {

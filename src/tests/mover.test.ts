@@ -1,4 +1,3 @@
-import { expect, test } from "vitest";
 import { maskSynthetizer, nonReqMask, nonReqMaskWithLiterl as nonReqMaskWithLiteral } from "./common";
 
 test("Передвигает движимое на 1 позицию", () => {

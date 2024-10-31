@@ -1,4 +1,3 @@
-import { expect, test } from "vitest";
 import MaskCharSynthetizer from "../MaskedEngine/maskSynthetizer";
 import { MaskFormat } from "../MaskedEngine/types";
 

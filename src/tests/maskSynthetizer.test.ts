@@ -1,4 +1,3 @@
-import { expect, test } from "vitest";
 import MaskCharSynthetizer from "../MaskedEngine/maskSynthetizer";
 import { MaskFormat } from "../MaskedEngine/types";
 import { maskEndLetter, maskWithLetterInside } from "./common";
@@ -80,7 +79,7 @@ test("Корректно кладутся и двигают движимое", (
     maskSynthetizer.putSymbols("111", 0);
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("1112");
-})
+});
 
 test("Корректно вставляет символы с упором в другую маску: 999  >> 99L", () => {
     maskSynthetizer.generate(maskWithLetterInside);
@@ -88,12 +87,12 @@ test("Корректно вставляет символы с упором в д
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("12   ");
-})
+});
 
 test("Корректно НЕ вставляет символы, если нет места", () => {
     maskSynthetizer.generate(nonReqMask);
     maskSynthetizer.putSymbols("1111", 0);
-    maskSynthetizer.putSymbols("5", 1)
+    maskSynthetizer.putSymbols("5", 1);
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("1111");
@@ -102,7 +101,7 @@ test("Корректно НЕ вставляет символы, если нет
 test("Корректно вставляет символ, если осталось последнее место", () => {
     maskSynthetizer.generate(nonReqMask);
     maskSynthetizer.putSymbols("11", 1);
-    maskSynthetizer.putSymbols("5", 1)
+    maskSynthetizer.putSymbols("5", 1);
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe(" 511");
@@ -115,15 +114,17 @@ test("Корректно вставляется и перемещается че
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("21 1 ");
-})
+});
 
 test("Корректно вставляется и заполняет всё поле", () => {
     maskSynthetizer.generate(nonReqMaskWithLiterl);
     maskSynthetizer.putSymbols("1984", 0);
 
-    const output = maskSynthetizer.toString(() => MaskFormat.IncludePromptAndLiterals);
+    const output = maskSynthetizer.toString(
+        () => MaskFormat.IncludePromptAndLiterals
+    );
     expect(output).toBe("19.84");
-})
+});
 
 test("Корректно НЕ вставляется, упираясь в другую маску", () => {
     maskSynthetizer.generate(maskWithLetterInside);
@@ -132,7 +133,7 @@ test("Корректно НЕ вставляется, упираясь в дру
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("11   ");
-})
+});
 
 test("Корректно вставляется обрезанное, упирается в конец строки", () => {
     maskSynthetizer.generate(nonReqMask);
@@ -141,7 +142,7 @@ test("Корректно вставляется обрезанное, упира
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("2111");
-})
+});
 
 test("Корректно вставляется обрезанное, упирается в другую маску", () => {
     maskSynthetizer.generate(maskEndLetter);
@@ -150,32 +151,34 @@ test("Корректно вставляется обрезанное, упира
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
     expect(output).toBe("211 ");
-})
+});
 
-test ("Корректно ничего не выводит (Exclude prompts and literals)", () => {
+test("Корректно ничего не выводит (Exclude prompts and literals)", () => {
     maskSynthetizer.generate(nonReqMaskWithLiterl);
 
     const output = maskSynthetizer.toString((s) => s.textMaskFormat);
-    expect(output).toBe("     ")
-})
+    expect(output).toBe("     ");
+});
 
 test("Корректно выводит только промпты (Include prompts)", () => {
     maskSynthetizer.generate(nonReqMaskWithLiterl);
 
     const output = maskSynthetizer.toString(() => MaskFormat.IncludePrompt);
-    expect(output).toBe("__ __")
-})
+    expect(output).toBe("__ __");
+});
 
 test("Корректно выводит только литералы (Include literals)", () => {
     maskSynthetizer.generate(nonReqMaskWithLiterl);
 
     const output = maskSynthetizer.toString(() => MaskFormat.IncludeLiterals);
-    expect(output).toBe("  .  ")
-})
+    expect(output).toBe("  .  ");
+});
 
 test("Корректно выводит литералы и промпты (Include prompts and literals)", () => {
     maskSynthetizer.generate(nonReqMaskWithLiterl);
 
-    const output = maskSynthetizer.toString(() => MaskFormat.IncludePromptAndLiterals);
-    expect(output).toBe("__.__")
-})
+    const output = maskSynthetizer.toString(
+        () => MaskFormat.IncludePromptAndLiterals
+    );
+    expect(output).toBe("__.__");
+});

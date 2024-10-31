@@ -19,6 +19,12 @@ class MaskCharSynthetizer {
     private freePositions: number[] = [];
     private focused: boolean = false;
 
+    private get actualLength(): number {
+        return this.mask.reduce<number>((acc, char): number => {
+            return acc + char.visibleAs.length;
+        }, 0);
+    }
+
     public set hidden(value: boolean) {
         this.focused = !value;
         this.updateMaskOnFocusChange();
@@ -36,7 +42,7 @@ class MaskCharSynthetizer {
         this.action = action;
     }
 
-    private literal(char: string): MaskedCharacterInfo {
+    private getLiteral(char: string): MaskedCharacterInfo {
         return {
             action: this.action,
             actual: undefined,
@@ -46,7 +52,7 @@ class MaskCharSynthetizer {
         };
     }
 
-    private placeholder(char: string): MaskedCharacterInfo {
+    private getPlaceholder(char: string): MaskedCharacterInfo {
         return {
             action: this.action,
             actual: undefined,
@@ -61,7 +67,18 @@ class MaskCharSynthetizer {
         };
     }
 
-    private postprocessor(char: string): void {
+    private getLocalizedLiterals(char: string): MaskedCharacterInfo {
+        return {
+            action: this.action,
+            actual: undefined,
+            replaceable: false,
+            required: false,
+            visibleAs:
+                maskCharactersDefinitions.localizedLiterals[char].visibleAs(),
+        };
+    }
+
+    private getPostprocessor(char: string): void {
         this.applyAction(maskCharactersDefinitions.postprocessors[char].action);
     }
 
@@ -76,16 +93,24 @@ class MaskCharSynthetizer {
             }
 
             if (!escaped && char in maskCharactersDefinitions.placeholders) {
-                generated.push(this.placeholder(char));
+                generated.push(this.getPlaceholder(char));
                 continue;
             }
 
             if (!escaped && char in maskCharactersDefinitions.postprocessors) {
-                this.postprocessor(char);
+                this.getPostprocessor(char);
                 continue;
             }
 
-            generated.push(this.literal(char));
+            if (
+                !escaped &&
+                char in maskCharactersDefinitions.localizedLiterals
+            ) {
+                generated.push(this.getLocalizedLiterals(char));
+                continue;
+            }
+
+            generated.push(this.getLiteral(char));
             escaped = false;
         }
 
@@ -381,7 +406,7 @@ class MaskCharSynthetizer {
         for (let i = startPtr; chars.length > 0; i += 1) {
             const mask = this.getMaskByPtr(i);
             const char = chars.shift();
-            mask.actual = char;
+            mask.actual = !char ? char : mask.action(char);
             if (!chars.length) return this.freePositions[i];
         }
 

@@ -1,5 +1,6 @@
 import {
     ActionProcessor,
+    LocalizedLiteralsDef,
     PlaceholderCharacterDef,
     PostprocessorCharacterDef,
     TERMINATOR,
@@ -12,11 +13,21 @@ type MaskedCharacterDefscontainers = {
     postprocessors: {
         [TCharacter in string]: PostprocessorCharacterDef;
     };
+    localizedLiterals: {
+        [TCharacter in string]: LocalizedLiteralsDef;
+    };
 
     isNotRegistered(character: string): boolean;
 };
 
 export const EmptyAction: ActionProcessor = (char) => char;
+
+function getCurrencyHelper(locale: string): string | undefined {
+    return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: "USD", // This is just a placeholder, it doesn't matter which currency you use here
+    }).resolvedOptions().currency;
+}
 
 const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
     placeholders: {
@@ -58,13 +69,13 @@ const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
         A: {
             rule: /\w/,
             required: true,
-            error: "Символ {0} не является буквой или цифрой"
+            error: "Символ {0} не является буквой или цифрой",
         },
         a: {
             rule: /\w/,
             required: false,
-            error: "Символ {0} не является буквой или цифрой"
-        }
+            error: "Символ {0} не является буквой или цифрой",
+        },
     },
     postprocessors: {
         ">": {
@@ -81,11 +92,39 @@ const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
             action: EmptyAction,
         },
     },
+    localizedLiterals: {
+        ".": {
+            visibleAs() {
+                return Intl.NumberFormat(navigator.language)
+                    .formatToParts(0.1)
+                    .find((part) => part.type === "decimal")!.value;
+            },
+        },
+        ",": {
+            visibleAs() {
+                return Intl.NumberFormat(navigator.language)
+                    .formatToParts(1_000)
+                    .find((part) => part.type === "group")!.value;
+            },
+        },
+        $: {
+            visibleAs() {
+                const char = Intl.NumberFormat(navigator.language, {
+                    style: "currency",
+                    currency: getCurrencyHelper(navigator.language),
+                })
+                    .formatToParts(0)
+                    .find((part) => part.type === "currency");
+                return char!.value;
+            },
+        },
+    },
 
     isNotRegistered(character: string): boolean {
         return (
             !(character in this.placeholders) &&
-            !(character in this.postprocessors)
+            !(character in this.postprocessors) &&
+            !(character in this.localizedLiterals)
         );
     },
 };

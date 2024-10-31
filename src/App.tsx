@@ -44,11 +44,7 @@ function App() {
         [stg]
     );
 
-    const update = useCallback((newValue: string) => {
-        if (textRef.current) textRef.current.value = newValue;
-    }, []);
-
-    useMaskedText(mask, stg, textRef, update);
+    useMaskedText(mask, stg, textRef);
 
     return (
         <div
