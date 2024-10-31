@@ -32,9 +32,39 @@ const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
         },
         L: {
             rule: /[a-zA-Zа-яА-Я]/,
-            required: false,
+            required: true,
             error: 'Символ "{0}" не является латинским или кириллическим символом',
         },
+        "#": {
+            rule: /[0-9\s+-]/,
+            required: false,
+            error: 'Символ "{0}" не является цифрой, пробелом или знаком + -',
+        },
+        "?": {
+            rule: /[a-zA-Zа-яА-Я]/,
+            required: true,
+            error: 'Символ "{0}" не является латинским или кириллическим символом',
+        },
+        "&": {
+            rule: /\p{L}/u,
+            required: true,
+            error: "Символ {0} не является буквой",
+        },
+        C: {
+            rule: /\p{L}/u,
+            required: false,
+            error: "Символ {0} не является буквой",
+        },
+        A: {
+            rule: /\w/,
+            required: true,
+            error: "Символ {0} не является буквой или цифрой"
+        },
+        a: {
+            rule: /\w/,
+            required: false,
+            error: "Символ {0} не является буквой или цифрой"
+        }
     },
     postprocessors: {
         ">": {

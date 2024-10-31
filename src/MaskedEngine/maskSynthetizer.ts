@@ -68,18 +68,25 @@ class MaskCharSynthetizer {
     public generate(mask: string): MaskedCharacterInfo[] {
         const generated: MaskedCharacterInfo[] = [];
 
+        let escaped = false;
         for (const char of mask) {
-            if (char in maskCharactersDefinitions.placeholders) {
+            if (!escaped && char === "\\") {
+                escaped = true;
+                continue;
+            }
+
+            if (!escaped && char in maskCharactersDefinitions.placeholders) {
                 generated.push(this.placeholder(char));
                 continue;
             }
 
-            if (char in maskCharactersDefinitions.postprocessors) {
+            if (!escaped && char in maskCharactersDefinitions.postprocessors) {
                 this.postprocessor(char);
                 continue;
             }
 
             generated.push(this.literal(char));
+            escaped = false;
         }
 
         this.mask = generated;
@@ -402,6 +409,8 @@ class MaskCharSynthetizer {
      * соответствующий элементу после вставлненных.
      * Если ничего не вставлено, возвращает тот же индекс */
     public putSymbols(data: string, position: number): number {
+        if (position === this.mask.length) return position;
+
         let puttable = this.getPuttable(data, position);
         let availablePlace = this.countAvailablePlaceFor(position);
 
