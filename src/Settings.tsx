@@ -1,6 +1,8 @@
 import { FC } from "react";
 import { MaskedInputSettings, MaskFormat } from "./MaskedEngine/types";
 
+type TypeVariants = "string" | "option" | "number" | "boolean";
+
 type SettingsPropsPropsType = {
     settings: MaskedInputSettings;
     onChange: (
@@ -11,16 +13,18 @@ type SettingsPropsPropsType = {
 
 type SettingsValueViewPropsType<TKey extends keyof MaskedInputSettings> = {
     name: TKey;
+    type: TypeVariants;
     value: MaskedInputSettings[TKey];
     onChange: (field: TKey, value: MaskedInputSettings[TKey]) => void;
 };
 
 const SettingsValueView = <TKey extends keyof MaskedInputSettings>({
     name,
+    type,
     onChange,
     value,
-}: SettingsValueViewPropsType<TKey>) : JSX.Element => {
-    switch (typeof value) {
+}: SettingsValueViewPropsType<TKey>): JSX.Element => {
+    switch (type) {
         case "boolean":
             return (
                 <div style={{ display: "flex", flexDirection: "row" }}>
@@ -42,13 +46,14 @@ const SettingsValueView = <TKey extends keyof MaskedInputSettings>({
                 </div>
             );
 
-        case "object":
+        case "option":
             return (
                 <div style={{ display: "flex", flexDirection: "row" }}>
+                    {name}
                     <select
                         style={{ display: "flex" }}
                         id={name}
-                        value={value as keyof MaskFormat}
+                        value={value as string}
                         onChange={(e) =>
                             onChange(
                                 name,
@@ -91,9 +96,26 @@ const SettingsValueView = <TKey extends keyof MaskedInputSettings>({
                     </label>
                 </div>
             );
-        
-            default: return <></>
+
+        default:
+            return <></>;
     }
+};
+
+type TypeDef = {
+    [TKey in keyof MaskedInputSettings]: TypeVariants;
+};
+
+const SettingTypes: TypeDef = {
+    beepOnError: "boolean",
+    cutCopyMaskFormat: "option",
+    hidePromptOnLeave: "boolean",
+    promptSymbol: "string",
+    rejectInputOnFirstFailure: "boolean",
+    resetOnPrompt: "boolean",
+    resetOnSpace: "boolean",
+    skipLiterals: "boolean",
+    textMaskFormat: "option",
 };
 
 const SettingsView: FC<SettingsPropsPropsType> = ({ settings, onChange }) => {
@@ -103,6 +125,7 @@ const SettingsView: FC<SettingsPropsPropsType> = ({ settings, onChange }) => {
             {Object.getOwnPropertyNames(settings).map((name) => (
                 <SettingsValueView
                     key={name}
+                    type={SettingTypes[name as keyof MaskedInputSettings]}
                     name={name as keyof MaskedInputSettings}
                     onChange={onChange}
                     value={settings[name as keyof MaskedInputSettings]}

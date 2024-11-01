@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import useMaskedText from "./MaskedEngine/useMaskedText";
-import { MaskedInputSettings, MaskFormat } from "./MaskedEngine/types";
+import { MaskedInputSettings } from "./MaskedEngine/types";
 import SettingsView from "./Settings";
+import { defaultSettigns } from "./MaskedEngine/consts";
 
 function App() {
     const textRef = useRef<HTMLInputElement>(null!);
@@ -11,19 +12,7 @@ function App() {
 
     const [stg, setStg] = useState<MaskedInputSettings>(() => {
         const saved = localStorage.getItem("MaskedInputSettings");
-        if (!saved)
-            return {
-                beepOnError: false,
-                cutCopyMaskFormat: MaskFormat.ExcludePromptAndLiterals,
-                hidePromptOnLeave: false,
-                promptSymbol: "_",
-                resetOnPrompt: false,
-                resetOnSpace: false,
-                skipLiterals: false,
-                textMaskFormat: MaskFormat.ExcludePromptAndLiterals,
-                rejectInputOnFirstFailure: false,
-            };
-
+        if (!saved) return defaultSettigns;
         return JSON.parse(saved);
     });
 
@@ -44,7 +33,7 @@ function App() {
         [stg]
     );
 
-    useMaskedText(mask, stg, textRef);
+    const output = useMaskedText(mask, stg, textRef);
 
     return (
         <div
@@ -56,6 +45,7 @@ function App() {
         >
             <input value={mask} onChange={(e) => setMask(e.target.value)} />
             <input ref={textRef} id="test" />
+            {output}
 
             <SettingsView onChange={onStgChange} settings={stg} />
         </div>

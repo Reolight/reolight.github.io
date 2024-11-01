@@ -1,4 +1,6 @@
+import { defaultSettigns } from "./consts";
 import maskCharactersDefinitions, { EmptyAction } from "./definitions";
+import { Logger } from "./logger";
 import {
     ActionProcessor,
     MaskedInputSettings,
@@ -12,9 +14,11 @@ import { createErrorMessage } from "./utils";
 /// На определённый СИМВОЛ МАСКИ в МАССИВЕ СИМВОЛОВ МАСКИ указывает ИНДЕКС в массиве freePositions;
 /// На определённый ИНДЕКС из массива freePositions указывает УКАЗАТЕЛЬ
 class MaskCharSynthetizer {
+    private logger: Logger = new Logger("synthetizer").shift().shift().mute();
+
     private action: ActionProcessor = EmptyAction;
     private mask: MaskedCharacterInfo[] = [];
-    private settings: MaskedInputSettings;
+    private settings: MaskedInputSettings = defaultSettigns;
     /** Это позиции, не занятые литералами (содержит ИНДЕКСЫ) */
     private freePositions: number[] = [];
     private focused: boolean = false;
@@ -26,8 +30,8 @@ class MaskCharSynthetizer {
     }
 
     public set hidden(value: boolean) {
+        this.logger.debug("HIDDEN set as", value);
         this.focused = !value;
-        this.updateMaskOnFocusChange();
     }
 
     public get hidden(): boolean {
@@ -45,7 +49,8 @@ class MaskCharSynthetizer {
         return actualIdx;
     }
 
-    constructor(settings: MaskedInputSettings) {
+    public applySettings(settings: MaskedInputSettings) {
+        this.logger.debug("new settings applied", settings);
         this.settings = settings;
     }
 
@@ -130,35 +135,39 @@ class MaskCharSynthetizer {
         return generated;
     }
 
-    /** Обновляет маску при потере/получении фокуса */
-    public updateMaskOnFocusChange(): MaskedCharacterInfo[] {
-        if (!this.settings.hidePromptOnLeave) return this.mask;
-
-        for (const maskedChar of this.mask) {
-            if (maskedChar.replaceable) {
-                maskedChar.visibleAs = this.hidden
-                    ? " "
-                    : this.settings.promptSymbol;
-            }
-        }
-
-        return this.mask;
-    }
-
     public get value(): string {
-        return this.mask.reduce((acc, charInfo) => {
-            if (charInfo.actual) return acc + charInfo.actual;
+        this.logger.shift().shift();
+        const val = this.mask.reduce((acc, charInfo) => {
+            if (charInfo.actual) {
+                this.logger.debug("contains actual:", charInfo.actual);
+                return acc + charInfo.actual;
+            }
 
-            if (charInfo.replaceable)
-                return (
-                    acc +
-                    (this.hidden && this.settings.hidePromptOnLeave
+            if (charInfo.replaceable) {
+                const resolved =
+                    this.hidden && this.settings.hidePromptOnLeave
                         ? " "
-                        : charInfo.visibleAs)
+                        : charInfo.visibleAs;
+
+                this.logger.debug(
+                    "provided placeholder:",
+                    resolved,
+                    "hidden:",
+                    this.hidden,
+                    "hidePromptOnLeave:",
+                    this.settings.hidePromptOnLeave
                 );
+
+                return acc + resolved;
+            }
+
+            this.logger.debug("provided literal:", charInfo.visibleAs);
 
             return acc + charInfo.visibleAs;
         }, "");
+
+        this.logger.unshift().debug("value synthetized: ", val).unshift();
+        return val;
     }
 
     public toString(
@@ -184,7 +193,7 @@ class MaskCharSynthetizer {
                 break;
         }
 
-        return this.mask.reduce((acc, charInfo) => {
+        const curmask = this.mask.reduce((acc, charInfo) => {
             if (charInfo.actual) return acc + charInfo.actual;
 
             if (charInfo.replaceable)
@@ -192,6 +201,9 @@ class MaskCharSynthetizer {
 
             return acc + (printLiterals ? charInfo.visibleAs : " ");
         }, "");
+
+        this.logger.debug("toString invoked", curmask, "type", format);
+        return curmask;
     }
 
     /**

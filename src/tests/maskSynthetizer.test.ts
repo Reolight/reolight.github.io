@@ -2,7 +2,8 @@ import MaskCharSynthetizer from "../MaskedEngine/maskSynthetizer";
 import { MaskFormat } from "../MaskedEngine/types";
 import { maskEndLetter, maskWithLetterInside } from "./common";
 
-const maskSynthetizer = new MaskCharSynthetizer({
+const maskSynthetizer = new MaskCharSynthetizer();
+maskSynthetizer.applySettings({
     beepOnError: false,
     cutCopyMaskFormat: MaskFormat.ExcludePromptAndLiterals,
     hidePromptOnLeave: false,

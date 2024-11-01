@@ -1,3 +1,5 @@
+import { MaskFormat } from "./types";
+
 export const currencyMap = {
     "en-US": "USD",
     "ru-RU": "RUB",
@@ -8,4 +10,16 @@ export const currencyMap = {
     "uk-UA": "UAH",
     "zh-CN": 'CNY',
     "be-BY": "BYN",
+};
+
+export const defaultSettigns = {
+    beepOnError: false,
+    cutCopyMaskFormat: MaskFormat.ExcludePromptAndLiterals,
+    hidePromptOnLeave: false,
+    promptSymbol: "_",
+    resetOnPrompt: false,
+    resetOnSpace: false,
+    skipLiterals: false,
+    textMaskFormat: MaskFormat.ExcludePromptAndLiterals,
+    rejectInputOnFirstFailure: false,
 };

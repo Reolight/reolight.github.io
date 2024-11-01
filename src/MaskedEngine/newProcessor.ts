@@ -1,11 +1,15 @@
 import React from "react";
 import MaskCharSynthetizer from "./maskSynthetizer";
 import { MaskedInputSettings } from "./types";
+import { defaultSettigns } from "./consts";
+import { Logger } from "./logger";
 
 class MaskProcessor2 {
+    private logger: Logger = new Logger("processor");
+
     private ref: React.MutableRefObject<HTMLInputElement>;
     private synthetizer: MaskCharSynthetizer;
-    private settings: MaskedInputSettings;
+    private settings: MaskedInputSettings = defaultSettigns;
 
     /** callback to update displayable value at higher level */
     private updateSrcValue: ((maskedValue: string) => void) | undefined =
@@ -15,23 +19,24 @@ class MaskProcessor2 {
         return this.synthetizer.value;
     }
 
-    constructor(
-        mask: string,
-        settings: MaskedInputSettings,
-        ref: React.MutableRefObject<HTMLInputElement>,
-        valueUpdate?: (maskedValue: string) => void
-    ) {
+    constructor(mask: string, ref: React.MutableRefObject<HTMLInputElement>) {
         this.ref = ref;
-        this.settings = settings;
-        this.synthetizer = new MaskCharSynthetizer(settings);
+        this.synthetizer = new MaskCharSynthetizer();
         this.synthetizer.generate(mask);
+    }
 
+    public applySettings(settings: MaskedInputSettings) {
+        this.logger.debug("setting application");
+        this.settings = settings;
+        this.synthetizer.applySettings(settings);
         this.synthetizer.hidden =
             settings.hidePromptOnLeave &&
-            ref.current !== document.activeElement;
+            this.ref.current !== document.activeElement;
+        this.invokeUpdate();
+    }
 
+    public applyUpdater(valueUpdate?: (maskedValue: string) => void) {
         this.updateSrcValue = valueUpdate;
-
         this.invokeUpdate();
     }
 
@@ -49,6 +54,7 @@ class MaskProcessor2 {
         this.ref.current.selectionEnd = end;
 
         if (this.updateSrcValue) {
+            this.logger.debug("updated src value", value);
             this.updateSrcValue(value);
         }
     }
@@ -84,7 +90,7 @@ class MaskProcessor2 {
 
     private onBeforeInput(e: Event) {
         const event = e as InputEvent;
-        console.debug("onBeforeInput launched");
+        this.logger.debug("onBeforeInput launched");
         if (event.inputType.startsWith("insert")) {
             event.preventDefault();
             const data = event.data;
@@ -105,30 +111,33 @@ class MaskProcessor2 {
                 this.invokeUpdate(lastPuttedIdx);
             } catch (e) {
                 const error = e as Error;
-                console.error(error.message);
+                this.logger.shift().error(error.message).unshift();
             }
 
-            console.debug(
-                "\tInput data:",
-                event.data,
-                "event type: ",
-                event.inputType
-            );
+            this.logger
+                .shift()
+                .debug(
+                    "Input data:",
+                    event.data,
+                    "event type: ",
+                    event.inputType
+                )
+                .unshift();
         }
     }
 
     private onInput() {
         const currentValue = this.ref.current.value;
         const storedValue = this.synthetizer.value;
-        console.debug("onInput: ", currentValue, "stored: ", storedValue);
+        this.logger.debug("onInput: ", currentValue, "stored: ", storedValue);
         if (currentValue.length !== storedValue.length) {
             const diffIdx = this.synthetizer.regenerate(currentValue);
-            console.debug(
-                "\tregenerated: ",
+            this.logger.shift().debug(
+                "regenerated: ",
                 this.synthetizer.value,
                 "idx:",
                 diffIdx
-            );
+            ).unshift();
             this.invokeUpdate(diffIdx);
         }
     }
@@ -153,30 +162,46 @@ class MaskProcessor2 {
     private onCopyBound = this.onCopy.bind(this);
 
     public attachListeners() {
+        this.logger.debug("Listeners attaching:").shift();
+
         if (this.settings.hidePromptOnLeave) {
+            this.logger.debug("attaching: blur");
             this.ref.current.addEventListener("blur", this.hidePromptsBound);
         }
 
+        this.logger.debug("attaching: focus");
         this.ref.current.addEventListener("focus", this.showPromptsBound);
+        this.logger.debug("attaching: input");
         this.ref.current.addEventListener("input", this.onInputBound);
+        this.logger.debug("attaching: beforeinput");
         this.ref.current.addEventListener(
             "beforeinput",
             this.onBeforeInputBound
         );
+        this.logger.debug("attaching: copy").unshift();
         this.ref.current.addEventListener("copy", this.onCopyBound);
     }
 
     public deattachListeners() {
+        this.logger.debug("Listeners deattaching:").shift();
         if (this.settings.hidePromptOnLeave) {
+            this.logger.debug("deattaching: blur");
             this.ref.current.removeEventListener("blur", this.hidePromptsBound);
         }
 
+        this.logger.debug("deattaching: focus");
         this.ref.current.removeEventListener("focus", this.showPromptsBound);
+        this.logger.debug("deattaching: input");
+
         this.ref.current.removeEventListener("input", this.onInputBound);
+        this.logger.debug("deattaching: beforeinput");
+
         this.ref.current.removeEventListener(
             "beforeinput",
             this.onBeforeInputBound
         );
+
+        this.logger.debug("deattaching: copy").unshift();
         this.ref.current.removeEventListener("copy", this.onCopyBound);
     }
 }

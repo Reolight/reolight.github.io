@@ -1,7 +1,8 @@
 import MaskCharSynthetizer from "../MaskedEngine/maskSynthetizer";
 import { MaskFormat } from "../MaskedEngine/types";
 
-export const maskSynthetizer = new MaskCharSynthetizer({
+export const maskSynthetizer = new MaskCharSynthetizer();
+maskSynthetizer.applySettings({
     beepOnError: false,
     cutCopyMaskFormat: MaskFormat.IncludePromptAndLiterals,
     hidePromptOnLeave: false,
@@ -13,7 +14,8 @@ export const maskSynthetizer = new MaskCharSynthetizer({
     textMaskFormat: MaskFormat.ExcludePromptAndLiterals,
 });
 
-export const maskSynthetizerIncludeEither = new MaskCharSynthetizer({
+export const maskSynthetizerIncludeEither = new MaskCharSynthetizer();
+maskSynthetizerIncludeEither.applySettings({
     beepOnError: false,
     cutCopyMaskFormat: MaskFormat.IncludeLiterals,
     hidePromptOnLeave: false,
@@ -23,7 +25,7 @@ export const maskSynthetizerIncludeEither = new MaskCharSynthetizer({
     resetOnSpace: false,
     skipLiterals: false,
     textMaskFormat: MaskFormat.IncludePrompt,
-})
+});
 
 export const nonReqMaskWithLiterl = "99.99";
 export const nonReqMask = "9999";
