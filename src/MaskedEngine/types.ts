@@ -20,7 +20,7 @@ export const TERMINATOR = "|";
 
 export type LocalizedLiteralsDef = {
     visibleAs: () => string;
-}
+};
 
 export type PlaceholderCharacterDef = {
     required: boolean;
@@ -54,13 +54,13 @@ export type MaskedCharacterInfo = {
 /** Способ форматирования строки в поле с маской */
 export enum MaskFormat {
     /** Исключать из выходной строки литералы и символы приглашения (заменяются пробелами) */
-    ExcludePromptAndLiterals = 'ExcludePromptAndLiterals',
+    ExcludePromptAndLiterals = "ExcludePromptAndLiterals",
     /** Включать символы приглашения в выходную строку */
-    IncludePrompt = 'IncludePrompt',
+    IncludePrompt = "IncludePrompt",
     /** Включать литералы в выходную строку, (символы приглашения заменяются пробелами) */
-    IncludeLiterals = 'IncludeLiterals',
+    IncludeLiterals = "IncludeLiterals",
     /** Включать и символы приглашения, и литералы */
-    IncludePromptAndLiterals = 'IncludePromptAndLiterals',
+    IncludePromptAndLiterals = "IncludePromptAndLiterals",
 }
 
 /** Настройки для поля текст с маской */

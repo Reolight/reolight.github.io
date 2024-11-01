@@ -39,9 +39,7 @@ export class Logger {
         return (
             Logger.DEBUG &&
             Logger.allowedLoggers[this.radix] &&
-            (Logger.allowedShifts < 0 ||
-                (Logger.allowedShifts >= 0 &&
-                    this.curShift < Logger.allowedShifts))
+            (Logger.allowedShifts < 0 || (Logger.allowedShifts >= 0 && this.curShift < Logger.allowedShifts))
         );
     }
 
@@ -66,12 +64,7 @@ export class Logger {
     public static PrintLoggersState() {
         const infoState = Object.getOwnPropertyNames(Logger.allowedLoggers)
             .filter((name) => name !== INTERNAL_RADIX)
-            .map(
-                (name) =>
-                    `${
-                        Logger.allowedLoggers[name] ? "<SPEAK>" : ">MUTE<"
-                    }\t${name}`
-            )
+            .map((name) => `${Logger.allowedLoggers[name] ? "<SPEAK>" : ">MUTE<"}\t${name}`)
             .join("\n");
 
         Logger.internal_logger.warn("\n" + infoState);
@@ -92,7 +85,7 @@ export class Logger {
         }
     }
 
-    public mute() { 
+    public mute() {
         Logger.Mute(this.radix);
         return this;
     }
@@ -108,10 +101,7 @@ export class Logger {
     }
 
     public unshift() {
-        if (this.curShift === 0)
-            Logger.internal_logger.error(
-                `${this.radix} - can't be UNSHIFTED, cus shift is already 0`
-            );
+        if (this.curShift === 0) Logger.internal_logger.error(`${this.radix} - can't be UNSHIFTED, cus shift is already 0`);
         else this.curShift--;
         return this;
     }

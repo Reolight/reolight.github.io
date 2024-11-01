@@ -1,13 +1,10 @@
 import { defaultSettigns } from "./consts";
 import maskCharactersDefinitions, { EmptyAction } from "./definitions";
 import { Logger } from "./logger";
-import {
-    ActionProcessor,
-    MaskedInputSettings,
-    MaskedCharacterInfo,
-    MaskFormat,
-} from "./types";
+import { ActionProcessor, MaskedInputSettings, MaskedCharacterInfo, MaskFormat } from "./types";
 import { createErrorMessage } from "./utils";
+
+type PutInfo = { char: string | undefined; idx: number };
 
 /// NOTA BENE!
 /// Здесь используется след. термины:
@@ -74,10 +71,7 @@ class MaskCharSynthetizer {
             actual: undefined,
             required: maskCharactersDefinitions.placeholders[char].required,
             replaceable: true,
-            visibleAs:
-                this.settings.hidePromptOnLeave && this.hidden
-                    ? " "
-                    : this.settings.promptSymbol,
+            visibleAs: this.settings.hidePromptOnLeave && this.hidden ? " " : this.settings.promptSymbol,
             rule: maskCharactersDefinitions.placeholders[char].rule,
             error: maskCharactersDefinitions.placeholders[char].error,
         };
@@ -89,8 +83,7 @@ class MaskCharSynthetizer {
             actual: undefined,
             replaceable: false,
             required: false,
-            visibleAs:
-                maskCharactersDefinitions.localizedLiterals[char].visibleAs(),
+            visibleAs: maskCharactersDefinitions.localizedLiterals[char].visibleAs(),
         };
     }
 
@@ -118,10 +111,7 @@ class MaskCharSynthetizer {
                 continue;
             }
 
-            if (
-                !escaped &&
-                char in maskCharactersDefinitions.localizedLiterals
-            ) {
+            if (!escaped && char in maskCharactersDefinitions.localizedLiterals) {
                 generated.push(this.getLocalizedLiterals(char));
                 continue;
             }
@@ -144,19 +134,9 @@ class MaskCharSynthetizer {
             }
 
             if (charInfo.replaceable) {
-                const resolved =
-                    this.hidden && this.settings.hidePromptOnLeave
-                        ? " "
-                        : charInfo.visibleAs;
+                const resolved = this.hidden && this.settings.hidePromptOnLeave ? " " : charInfo.visibleAs;
 
-                this.logger.debug(
-                    "provided placeholder:",
-                    resolved,
-                    "hidden:",
-                    this.hidden,
-                    "hidePromptOnLeave:",
-                    this.settings.hidePromptOnLeave
-                );
+                this.logger.debug("provided placeholder:", resolved, "hidden:", this.hidden, "hidePromptOnLeave:", this.settings.hidePromptOnLeave);
 
                 return acc + resolved;
             }
@@ -170,9 +150,7 @@ class MaskCharSynthetizer {
         return val;
     }
 
-    public toString(
-        formatSelector: (settings: MaskedInputSettings) => MaskFormat
-    ): string {
+    public toString(formatSelector: (settings: MaskedInputSettings) => MaskFormat): string {
         const format = formatSelector(this.settings);
 
         let printLiterals = false,
@@ -196,8 +174,7 @@ class MaskCharSynthetizer {
         const curmask = this.mask.reduce((acc, charInfo) => {
             if (charInfo.actual) return acc + charInfo.actual;
 
-            if (charInfo.replaceable)
-                return acc + (printPrompt ? charInfo.visibleAs : " ");
+            if (charInfo.replaceable) return acc + (printPrompt ? charInfo.visibleAs : " ");
 
             return acc + (printLiterals ? charInfo.visibleAs : " ");
         }, "");
@@ -212,11 +189,7 @@ class MaskCharSynthetizer {
      */
     private getPurePositions(from?: number, to?: number): number[] {
         const free: number[] = [];
-        for (
-            let index = from ?? 0;
-            index < (to ?? this.mask.length);
-            index += 1
-        ) {
+        for (let index = from ?? 0; index < (to ?? this.mask.length); index += 1) {
             if (from && index < from) return free;
             if (this.mask[index].replaceable) {
                 free.push(index);
@@ -241,11 +214,7 @@ class MaskCharSynthetizer {
     /** Проверяет, подходят ли символы с позиций validated на позиции positions.
      * Позиции positions не включают литералы
      */
-    private validateForPositions(
-        validated: number[],
-        positions: number[],
-        shift: number = 0
-    ): boolean {
+    private validateForPositions(validated: number[], positions: number[], shift: number = 0): boolean {
         for (let i = 0; i < validated.length; i += 1) {
             if (i + shift >= positions.length) return false;
 
@@ -325,8 +294,7 @@ class MaskCharSynthetizer {
         const startPtr = this.getPtr(start);
         const endPtr = this.getPtr(start + length);
 
-        if (startPtr < 0 || endPtr < 0)
-            throw new Error("Null Pointers detected");
+        if (startPtr < 0 || endPtr < 0) throw new Error("Null Pointers detected");
 
         const movable = this.freePositions.slice(startPtr, endPtr);
 
@@ -361,11 +329,7 @@ class MaskCharSynthetizer {
         const startPtr = this.getPtr(start);
 
         let available = 0;
-        for (
-            let i = startPtr;
-            i < this.freePositions.length;
-            i += 1, available += 1
-        ) {
+        for (let i = startPtr; i < this.freePositions.length; i += 1, available += 1) {
             const mask = this.getMaskByPtr(i);
             if (!mask) throw new Error("not found");
             if (mask.actual) return available;
@@ -374,44 +338,60 @@ class MaskCharSynthetizer {
         return available;
     }
 
+    private validForNextPlaceholder(char: string, positionIdx: number): { valid: boolean; placeholderIdx: number } {
+        const freePtr = this.getPtr(positionIdx);
+        if (freePtr >= 0) {
+            const mask = this.getMaskByPtr(freePtr);
+            if (mask.rule && mask.rule.test(char)) {
+                return {
+                    placeholderIdx: this.freePositions[freePtr],
+                    valid: true,
+                };
+            }
+        }
+
+        return {
+            placeholderIdx: freePtr >= 0 ? this.freePositions[freePtr] : freePtr,
+            valid: false,
+        };
+    }
+
     /**
      * Создаёт строку, которую можно уместить в заданную позицию без учёта занятости
      * позиций после.
      * @param data помещаемые данные
-     * @param position позиция с которой нужно считать
+     * @param positionIdx позиция с которой нужно считать
      */
-    private getPuttable(data: string, position: number): string[] {
+    private getPuttable(data: string, positionIdx: number): PutInfo[] {
         const chars = data.split("");
-        const startPtr = this.getPtr(position);
+        const puttable: PutInfo[] = [];
 
-        const puttable: string[] = [];
-
-        for (
-            let maskPtr = startPtr;
-            chars.length > 0 && maskPtr < this.freePositions.length;
-
-        ) {
+        for (let maskIdx = positionIdx; chars.length > 0 && maskIdx < this.mask.length; ) {
             const char = chars.shift()!;
-            const mask = this.getMaskByPtr(maskPtr);
+            const mask = this.mask[maskIdx];
+
+            if (!this.settings.skipLiterals && !mask.replaceable && char === mask.visibleAs) {
+                puttable.push({ char, idx: maskIdx });
+                continue;
+            }
 
             // если пробел или промпт разрешены для сброса, поступаем как с подходящим символом
             if (
-                (char === " " && this.settings.resetOnSpace) ||
-                (char === this.settings.promptSymbol &&
-                    this.settings.resetOnPrompt)
+                mask.replaceable &&
+                ((char === " " && this.settings.resetOnSpace) || (char === this.settings.promptSymbol && this.settings.resetOnPrompt))
             ) {
-                puttable.push(char);
-                maskPtr += 1;
+                puttable.push({ char, idx: maskIdx });
+                maskIdx += 1;
+                continue;
             }
 
-            if (mask.rule) {
-                if (mask.rule.test(char)) {
-                    puttable.push(char);
-                    maskPtr += 1;
-                } else {
-                    if (!this.settings.rejectInputOnFirstFailure) continue;
-                    else throw new Error(createErrorMessage(mask, char));
-                }
+            const validationResult = this.validForNextPlaceholder(char, maskIdx);
+            if (validationResult.valid) {
+                puttable.push({ char, idx: validationResult.placeholderIdx });
+                maskIdx = validationResult.placeholderIdx + 1;
+            } else {
+                if (!this.settings.rejectInputOnFirstFailure) continue;
+                else throw new Error(createErrorMessage(mask, char));
             }
         }
 
@@ -420,33 +400,25 @@ class MaskCharSynthetizer {
 
     /** Вставляет символы с начала указанной позиции по указателям (т.е. в свободные строки).
      * Возвращает индекс последнего элемента*/
-    private putInternal(
-        dataChars: (string | undefined)[],
-        positionIdx: number
-    ): number {
-        const chars = dataChars.slice();
-        const startPtr = this.getPtr(positionIdx);
-        for (let i = startPtr; chars.length > 0; i += 1) {
-            const mask = this.getMaskByPtr(i);
-            const char = chars.shift();
-            mask.actual = !char ? char : mask.action(char);
-            if (!chars.length) return this.freePositions[i];
+    private putInternal(dataChars: PutInfo[], positionIdx: number): number {
+        for (const { char, idx } of dataChars) {
+            const mask = this.mask[idx];
+            if (mask.replaceable) {
+                mask.actual = !char ? char : mask.action(char);
+            }
         }
 
-        return this.freePositions[startPtr];
+        return dataChars.at(-1)?.idx ?? positionIdx;
     }
 
     /** Обрабатывает пробелы и промпты перед вставкой: если ресет разрешён, заменяет на undefined. Мутирует массив */
-    private prePutProcess(
-        puttable: (string | undefined)[]
-    ): (string | undefined)[] {
+    private prePutProcess(puttable: PutInfo[]): PutInfo[] {
         for (let index = 0; index < puttable.length; index += 1) {
             if (
-                (puttable[index] === " " && this.settings.resetOnSpace) ||
-                (puttable[index] === this.settings.promptSymbol &&
-                    this.settings.resetOnPrompt)
+                (puttable[index].char === " " && this.settings.resetOnSpace) ||
+                (puttable[index].char === this.settings.promptSymbol && this.settings.resetOnPrompt)
             ) {
-                puttable[index] = undefined;
+                puttable[index].char = undefined;
             }
         }
 
@@ -463,10 +435,7 @@ class MaskCharSynthetizer {
         let availablePlace = this.countAvailablePlaceFor(position);
 
         if (availablePlace < puttable.length) {
-            availablePlace += this.shiftOccupiedRight(
-                position + availablePlace,
-                puttable.length - availablePlace
-            );
+            availablePlace += this.shiftOccupiedRight(position + availablePlace, puttable.length - availablePlace);
 
             if (availablePlace < puttable.length) {
                 puttable = puttable.slice(0, availablePlace);
@@ -497,17 +466,14 @@ class MaskCharSynthetizer {
         return value.length;
     }
 
-    private extractActualChars(
-        startPtr?: number,
-        endPtr?: number
-    ): (string | undefined)[] {
+    private extractActualChars(startPtr?: number, endPtr?: number): PutInfo[] {
         const start = startPtr ?? 0;
         const end = endPtr ?? this.freePositions.length;
 
-        const chars: (string | undefined)[] = [];
+        const chars: PutInfo[] = [];
 
         for (let ptr = start; ptr < end; ptr += 1) {
-            chars.push(this.getMaskByPtr(ptr).actual);
+            chars.push({ char: this.getMaskByPtr(ptr).actual, idx: this.freePositions[ptr] });
         }
 
         return chars;
@@ -546,21 +512,12 @@ class MaskCharSynthetizer {
             const restOriginSize = this.freePositions.length - restOriginPtr;
 
             const isValid = this.validateForPositions(
-                this.freePositions.slice(
-                    restOriginPtr,
-                    restOriginPtr + restOriginSize
-                ),
-                this.freePositions.slice(
-                    diffStartPtr,
-                    diffStartPtr + restLength
-                )
+                this.freePositions.slice(restOriginPtr, restOriginPtr + restOriginSize),
+                this.freePositions.slice(diffStartPtr, diffStartPtr + restLength)
             );
 
             if (isValid) {
-                const actualRest = this.extractActualChars(
-                    restOriginPtr,
-                    restOriginPtr + restOriginSize
-                );
+                const actualRest = this.extractActualChars(restOriginPtr, restOriginPtr + restOriginSize);
 
                 this.resetActualInput(diffStart);
                 this.putInternal(actualRest, diffStart);

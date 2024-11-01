@@ -8,7 +8,7 @@ export const currencyMap = {
     "jp-JP": "JPY",
     "ja-JP": "JPY",
     "uk-UA": "UAH",
-    "zh-CN": 'CNY',
+    "zh-CN": "CNY",
     "be-BY": "BYN",
 };
 

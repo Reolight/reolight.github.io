@@ -12,8 +12,7 @@ class MaskProcessor2 {
     private settings: MaskedInputSettings = defaultSettigns;
 
     /** callback to update displayable value at higher level */
-    private updateSrcValue: ((maskedValue: string) => void) | undefined =
-        undefined;
+    private updateSrcValue: ((maskedValue: string) => void) | undefined = undefined;
 
     public get value(): string {
         return this.synthetizer.value;
@@ -29,9 +28,7 @@ class MaskProcessor2 {
         this.logger.debug("setting application");
         this.settings = settings;
         this.synthetizer.applySettings(settings);
-        this.synthetizer.hidden =
-            settings.hidePromptOnLeave &&
-            this.ref.current !== document.activeElement;
+        this.synthetizer.hidden = settings.hidePromptOnLeave && this.ref.current !== document.activeElement;
         this.invokeUpdate();
     }
 
@@ -104,9 +101,7 @@ class MaskProcessor2 {
             }
 
             try {
-                const lastPuttedIdx = data
-                    ? this.synthetizer.putSymbols(data, startIdx)
-                    : 0;
+                const lastPuttedIdx = data ? this.synthetizer.putSymbols(data, startIdx) : 0;
 
                 this.invokeUpdate(lastPuttedIdx);
             } catch (e) {
@@ -114,15 +109,7 @@ class MaskProcessor2 {
                 this.logger.shift().error(error.message).unshift();
             }
 
-            this.logger
-                .shift()
-                .debug(
-                    "Input data:",
-                    event.data,
-                    "event type: ",
-                    event.inputType
-                )
-                .unshift();
+            this.logger.shift().debug("Input data:", event.data, "event type: ", event.inputType).unshift();
         }
     }
 
@@ -132,21 +119,14 @@ class MaskProcessor2 {
         this.logger.debug("onInput: ", currentValue, "stored: ", storedValue);
         if (currentValue.length !== storedValue.length) {
             const diffIdx = this.synthetizer.regenerate(currentValue);
-            this.logger.shift().debug(
-                "regenerated: ",
-                this.synthetizer.value,
-                "idx:",
-                diffIdx
-            ).unshift();
+            this.logger.shift().debug("regenerated: ", this.synthetizer.value, "idx:", diffIdx).unshift();
             this.invokeUpdate(diffIdx);
         }
     }
 
     private onCopy(e: Event) {
         const event = e as ClipboardEvent;
-        const copied = this.synthetizer.toString(
-            (settings) => settings.cutCopyMaskFormat
-        );
+        const copied = this.synthetizer.toString((settings) => settings.cutCopyMaskFormat);
         event.clipboardData?.setData("text/plain", copied);
         event.preventDefault();
     }
@@ -174,10 +154,7 @@ class MaskProcessor2 {
         this.logger.debug("attaching: input");
         this.ref.current.addEventListener("input", this.onInputBound);
         this.logger.debug("attaching: beforeinput");
-        this.ref.current.addEventListener(
-            "beforeinput",
-            this.onBeforeInputBound
-        );
+        this.ref.current.addEventListener("beforeinput", this.onBeforeInputBound);
         this.logger.debug("attaching: copy").unshift();
         this.ref.current.addEventListener("copy", this.onCopyBound);
     }
@@ -196,10 +173,7 @@ class MaskProcessor2 {
         this.ref.current.removeEventListener("input", this.onInputBound);
         this.logger.debug("deattaching: beforeinput");
 
-        this.ref.current.removeEventListener(
-            "beforeinput",
-            this.onBeforeInputBound
-        );
+        this.ref.current.removeEventListener("beforeinput", this.onBeforeInputBound);
 
         this.logger.debug("deattaching: copy").unshift();
         this.ref.current.removeEventListener("copy", this.onCopyBound);

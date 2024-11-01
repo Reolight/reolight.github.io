@@ -1,8 +1,4 @@
-import {
-    ActionProcessor,
-    MaskedCharacterDefscontainers,
-    TERMINATOR,
-} from "./types";
+import { ActionProcessor, MaskedCharacterDefscontainers, TERMINATOR } from "./types";
 import { getCurrencyCode } from "./utils";
 
 export const EmptyAction: ActionProcessor = (char) => char;
@@ -125,11 +121,7 @@ const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
     },
 
     isNotRegistered(character: string): boolean {
-        return (
-            !(character in this.placeholders) &&
-            !(character in this.postprocessors) &&
-            !(character in this.localizedLiterals)
-        );
+        return !(character in this.placeholders) && !(character in this.postprocessors) && !(character in this.localizedLiterals);
     },
 };
 
