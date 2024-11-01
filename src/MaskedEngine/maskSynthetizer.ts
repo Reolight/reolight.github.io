@@ -504,7 +504,7 @@ class MaskCharSynthetizer {
      * @param damaged это значение из самого input. Не скопированнное и не выведенное!
      * @returns индекс начала повреждения или длину строки
      */
-    public regenerate(damaged: string): number {
+    public regenerate(damaged: string, diffPosition?: number): number {
         const lengthDiff = this.actualLength - damaged.length;
 
         // регенерировать "нечего" (вероятна подмена символа!)
@@ -512,7 +512,7 @@ class MaskCharSynthetizer {
 
         if (lengthDiff < 0) throw new Error("Not supported (for now?)"); // ???
 
-        const diffStart = this.findDifference(damaged);
+        const diffStart = diffPosition ?? this.findDifference(damaged);
         const restLength = damaged.length - diffStart;
         const diffStartPtr = this.getPtr(diffStart);
 

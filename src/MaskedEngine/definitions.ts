@@ -87,13 +87,12 @@ const maskCharactersDefinitions: MaskedCharacterDefscontainers = {
         },
         $: {
             visibleAs() {
-                const char = Intl.NumberFormat(navigator.language, {
+                return Intl.NumberFormat(navigator.language, {
                     style: "currency",
                     currency: getCurrencyCode(navigator.language),
                 })
                     .formatToParts(0)
-                    .find((part) => part.type === "currency");
-                return char!.value;
+                    .find((part) => part.type === "currency")!.value;
             },
         },
     },

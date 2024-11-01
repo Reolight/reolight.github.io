@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { MaskedInputSettings } from "./types";
 import MaskProcessor from "./newProcessor";
 
@@ -9,7 +9,9 @@ const useMaskedText = (
     updateCallback?: (newValue: string) => void,
     initialValue?: string
 ): void => {
-    const processor = useMemo(() => {
+    const [processor, setProcessor] = useState<MaskProcessor | null>(null);
+
+    useEffect(() => {
         if (!ref.current) {
             return undefined;
         }
@@ -20,7 +22,7 @@ const useMaskedText = (
             proc.applyValue(initialValue);
         }
 
-        return proc;
+        setProcessor(proc);
     }, [initialValue, mask, ref, settings, updateCallback]);
 
     useEffect(() => {

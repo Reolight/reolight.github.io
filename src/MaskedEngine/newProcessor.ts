@@ -91,7 +91,7 @@ class MaskProcessor2 {
             if (startIdx !== endIdx) {
                 const value = this.synthetizer.value;
                 const newValue = value.substring(startIdx, endIdx);
-                this.synthetizer.regenerate(newValue);
+                this.synthetizer.regenerate(newValue, startIdx);
             }
 
             try {
