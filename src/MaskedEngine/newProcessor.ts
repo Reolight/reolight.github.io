@@ -59,8 +59,11 @@ class MaskProcessor2 {
     }
 
     private showPrompts() {
-        this.synthetizer.hidden = false;
+        if (this.settings.hidePromptOnLeave) this.synthetizer.hidden = false;
         this.invokeUpdate();
+        const actualIdx = this.synthetizer.lastActualIdx;
+        this.ref.current.selectionStart = actualIdx;
+        this.ref.current.selectionEnd = actualIdx;
     }
 
     private get selectionStartIdx(): number {
@@ -152,9 +155,9 @@ class MaskProcessor2 {
     public attachListeners() {
         if (this.settings.hidePromptOnLeave) {
             this.ref.current.addEventListener("blur", this.hidePromptsBound);
-            this.ref.current.addEventListener("focus", this.showPromptsBound);
         }
 
+        this.ref.current.addEventListener("focus", this.showPromptsBound);
         this.ref.current.addEventListener("input", this.onInputBound);
         this.ref.current.addEventListener(
             "beforeinput",
@@ -166,12 +169,9 @@ class MaskProcessor2 {
     public deattachListeners() {
         if (this.settings.hidePromptOnLeave) {
             this.ref.current.removeEventListener("blur", this.hidePromptsBound);
-            this.ref.current.removeEventListener(
-                "focus",
-                this.showPromptsBound
-            );
         }
 
+        this.ref.current.removeEventListener("focus", this.showPromptsBound);
         this.ref.current.removeEventListener("input", this.onInputBound);
         this.ref.current.removeEventListener(
             "beforeinput",

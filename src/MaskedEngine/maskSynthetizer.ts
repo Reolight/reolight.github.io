@@ -34,6 +34,17 @@ class MaskCharSynthetizer {
         return !this.focused;
     }
 
+    public get lastActualIdx(): number {
+        let actualIdx = 0;
+        for (let i = 0; i < this.freePositions.length; i += 1) {
+            if (this.getMaskByPtr(i).actual) {
+                actualIdx = this.freePositions[i] + 1;
+            }
+        }
+
+        return actualIdx;
+    }
+
     constructor(settings: MaskedInputSettings) {
         this.settings = settings;
     }
