@@ -9,11 +9,13 @@ const useMaskedText = (
     ref: React.MutableRefObject<HTMLInputElement>,
     updateCallback?: (newValue: string) => void,
     initialValue?: string
-): [string] => {
+): [string, string, string[]] => {
     const logger = useMemo(() => new Logger("HOOK"), []);
 
     const [processor, setProcessor] = useState<MaskProcessor | null>(null);
     const [output, setOutput] = useState<string>("");
+    const [errors, setErrors] = useState<string[]>([]);
+    const [maskHelper, setMaskHelper] = useState<string>("");
 
     useEffect(() => {
         if (!ref.current) {
@@ -21,6 +23,7 @@ const useMaskedText = (
         }
 
         const proc = new MaskProcessor(mask, ref);
+        setMaskHelper(proc.maskHelper);
         setProcessor(proc);
 
         if (initialValue) {
@@ -37,6 +40,7 @@ const useMaskedText = (
 
         processor.applyUpdater((newValue) => {
             setOutput(processor.output);
+            setErrors(processor.validate());
             if (updateCallback) updateCallback(newValue);
         });
     }, [processor, updateCallback]);
@@ -67,7 +71,7 @@ const useMaskedText = (
         logger.debug("ref updated");
     }, [logger, ref]);
 
-    return [output];
+    return [output, maskHelper, errors];
 };
 
 export default useMaskedText;

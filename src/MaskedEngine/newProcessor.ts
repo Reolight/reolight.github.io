@@ -4,7 +4,7 @@ import { MaskedInputSettings } from "./types";
 import { defaultSettigns } from "./consts";
 import { Logger } from "./logger";
 
-class MaskProcessor2 {
+class MaskProcessorEventBased {
     private logger: Logger = new Logger("processor");
 
     private ref: React.MutableRefObject<HTMLInputElement>;
@@ -85,6 +85,10 @@ class MaskProcessor2 {
         this.ref.current.selectionEnd = value;
     }
 
+    public get maskHelper(): string {
+        return this.synthetizer.maskHelper;
+    }
+
     private onBeforeInput(e: Event) {
         const event = e as InputEvent;
         this.logger.debug("onBeforeInput launched");
@@ -121,6 +125,18 @@ class MaskProcessor2 {
             const diffIdx = this.synthetizer.regenerate(currentValue);
             this.logger.shift().debug("regenerated: ", this.synthetizer.value, "idx:", diffIdx).unshift();
             this.invokeUpdate(diffIdx);
+        }
+    }
+
+    public validate(): string[] {
+        const errors: string[] = [];
+        try {
+            this.synthetizer.validate();
+        } catch (e) {
+            const error = e as Error;
+            errors.push(error.message);
+        } finally {
+            return errors;
         }
     }
 
@@ -180,4 +196,4 @@ class MaskProcessor2 {
     }
 }
 
-export default MaskProcessor2;
+export default MaskProcessorEventBased;

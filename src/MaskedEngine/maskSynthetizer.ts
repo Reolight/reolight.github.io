@@ -19,6 +19,11 @@ class MaskCharSynthetizer {
     /** Это позиции, не занятые литералами (содержит ИНДЕКСЫ) */
     private freePositions: number[] = [];
     private focused: boolean = false;
+    private maskHelperString: string = "";
+
+    public get maskHelper(): string {
+        return this.maskHelperString;
+    }
 
     private get actualLength(): number {
         return this.mask.reduce<number>((acc, char): number => {
@@ -94,6 +99,7 @@ class MaskCharSynthetizer {
     public generate(mask: string): MaskedCharacterInfo[] {
         const generated: MaskedCharacterInfo[] = [];
 
+        const helper: string[] = [];
         let escaped = false;
         for (const char of mask) {
             if (!escaped && char === "\\") {
@@ -103,6 +109,7 @@ class MaskCharSynthetizer {
 
             if (!escaped && char in maskCharactersDefinitions.placeholders) {
                 generated.push(this.getPlaceholder(char));
+                helper.push(char);
                 continue;
             }
 
@@ -113,15 +120,18 @@ class MaskCharSynthetizer {
 
             if (!escaped && char in maskCharactersDefinitions.localizedLiterals) {
                 generated.push(this.getLocalizedLiterals(char));
+                helper.push(char);
                 continue;
             }
 
             generated.push(this.getLiteral(char));
+            helper.push(char);
             escaped = false;
         }
 
         this.mask = generated;
         this.freePositions = this.getPurePositions();
+        this.maskHelperString = helper.join("");
         return generated;
     }
 
@@ -527,6 +537,19 @@ class MaskCharSynthetizer {
         }
 
         return diffStart;
+    }
+
+    /** Проверяет текущую маску на соответствие правилам.
+     * Возвращает или true, или кидает исключение с ошибкой
+     */
+    public validate(): true | never {
+        this.mask.forEach((mask, index) => {
+            if (!mask.replaceable) return;
+
+            if (mask.required && !mask.actual) throw new Error(`Символ в позиции ${index} обязателен`);
+        });
+
+        return true;
     }
 }
 

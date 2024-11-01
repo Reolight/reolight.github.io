@@ -21,10 +21,7 @@ function App() {
     }, [stg]);
 
     const onStgChange = useCallback(
-        (
-            field: keyof MaskedInputSettings,
-            value: MaskedInputSettings[keyof MaskedInputSettings]
-        ) => {
+        (field: keyof MaskedInputSettings, value: MaskedInputSettings[keyof MaskedInputSettings]) => {
             setStg({
                 ...stg,
                 [field]: value,
@@ -33,7 +30,7 @@ function App() {
         [stg]
     );
 
-    const output = useMaskedText(mask, stg, textRef);
+    const [output, maskHelper, errors] = useMaskedText(mask, stg, textRef);
 
     return (
         <div
@@ -46,7 +43,14 @@ function App() {
             <input value={mask} onChange={(e) => setMask(e.target.value)} />
             <input ref={textRef} id="test" />
             {output}
+            <br />
+            mask is: "{maskHelper}"
 
+            <ul style={{ color: "red" }}>
+                {errors.map((e) => (
+                    <li>{e}</li>
+                ))}
+            </ul>
             <SettingsView onChange={onStgChange} settings={stg} />
         </div>
     );
