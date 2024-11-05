@@ -1,8 +1,10 @@
 import { maskSynthetizer, maskWithLetterInside } from "./common";
 
-test("Корректно обрезает неподходящие символы ('123' > '12')", () => {
-    maskSynthetizer.generate(maskWithLetterInside);
-    const output = maskSynthetizer["getPuttable"]("123", 0);
+describe("Test for getting suitable fragment for mask", () => {
+    it("Корректно обрезает неподходящие символы ('123' > '12')", () => {
+        maskSynthetizer.generate(maskWithLetterInside);
+        const output = maskSynthetizer["getPuttable"]("123", 0);
 
-    expect(output.join("")).toBe("12");
+        expect(output.join("")).toBe("12");
+    });
 });

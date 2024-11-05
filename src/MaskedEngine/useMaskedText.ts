@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { MaskedInputSettings } from "./types";
-import MaskProcessor from "./newProcessor";
+import MaskProcessor from "./MaskProcessorEventBased";
 import { Logger } from "./logger";
 
 const useMaskedText = (

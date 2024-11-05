@@ -4,7 +4,7 @@ import { Logger } from "./logger";
 import { ActionProcessor, MaskedInputSettings, MaskedCharacterInfo, MaskFormat } from "./types";
 import { createErrorMessage } from "./utils";
 
-type PutInfo = { char: string | undefined; idx: number };
+type PutInfo = { char: string | undefined; idx: number; literal: boolean };
 
 /// NOTA BENE!
 /// Здесь используется след. термины:
@@ -381,7 +381,7 @@ class MaskCharSynthetizer {
             const mask = this.mask[maskIdx];
 
             if (!this.settings.skipLiterals && !mask.replaceable && char === mask.visibleAs) {
-                puttable.push({ char, idx: maskIdx });
+                puttable.push({ char, idx: maskIdx, literal: true });
                 continue;
             }
 
@@ -390,14 +390,14 @@ class MaskCharSynthetizer {
                 mask.replaceable &&
                 ((char === " " && this.settings.resetOnSpace) || (char === this.settings.promptSymbol && this.settings.resetOnPrompt))
             ) {
-                puttable.push({ char, idx: maskIdx });
+                puttable.push({ char, idx: maskIdx, literal: false });
                 maskIdx += 1;
                 continue;
             }
 
             const validationResult = this.validForNextPlaceholder(char, maskIdx);
             if (validationResult.valid) {
-                puttable.push({ char, idx: validationResult.placeholderIdx });
+                puttable.push({ char, idx: validationResult.placeholderIdx, literal: false });
                 maskIdx = validationResult.placeholderIdx + 1;
             } else {
                 if (!this.settings.rejectInputOnFirstFailure) continue;
@@ -443,11 +443,12 @@ class MaskCharSynthetizer {
 
         let puttable = this.getPuttable(data, position);
         let availablePlace = this.countAvailablePlaceFor(position);
+        const userInputCount = puttable.filter((char) => !char.literal).length;
 
-        if (availablePlace < puttable.length) {
-            availablePlace += this.shiftOccupiedRight(position + availablePlace, puttable.length - availablePlace);
+        if (availablePlace < userInputCount) {
+            availablePlace += this.shiftOccupiedRight(position + availablePlace, userInputCount - availablePlace);
 
-            if (availablePlace < puttable.length) {
+            if (availablePlace < userInputCount) {
                 puttable = puttable.slice(0, availablePlace);
             }
         }
@@ -483,7 +484,7 @@ class MaskCharSynthetizer {
         const chars: PutInfo[] = [];
 
         for (let ptr = start; ptr < end; ptr += 1) {
-            chars.push({ char: this.getMaskByPtr(ptr).actual, idx: this.freePositions[ptr] });
+            chars.push({ char: this.getMaskByPtr(ptr).actual, idx: this.freePositions[ptr], literal: false });
         }
 
         return chars;
